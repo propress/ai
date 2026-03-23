@@ -100,7 +100,7 @@ foreach ($knowledgeBase as $doc) {
 
 $indexer = new DocumentIndexer(new DocumentProcessor($vectorizer, $vectorStore));
 $indexer->index($documents);
-echo "✅ 知识库已索引（{$count} 篇文档）\n";
+echo "✅ 知识库已索引（" . count($documents) . " 篇文档）\n";
 ```
 
 ---
