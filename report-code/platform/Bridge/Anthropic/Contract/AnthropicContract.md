@@ -1,0 +1,3 @@
+# Anthropic/Contract/AnthropicContract 分析报告
+
+注册所有 Claude 专用 Normalizer，均通过 `supportsModel(instanceof Claude)` 自动激活：AssistantMessageNormalizer、DocumentNormalizer、DocumentUrlNormalizer、ImageNormalizer、ImageUrlNormalizer、MessageBagNormalizer、ToolCallMessageNormalizer、ToolNormalizer。

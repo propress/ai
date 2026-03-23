@@ -1,0 +1,3 @@
+# OpenResponses/Contract/OpenResponsesContract 分析报告
+
+注册所有 Responses API 格式的 Normalizer：MessageBagNormalizer、AssistantMessageNormalizer、ImageNormalizer、ImageUrlNormalizer、TextNormalizer、ToolNormalizer、ToolCallNormalizer、ToolCallMessageNormalizer、DocumentNormalizer。
