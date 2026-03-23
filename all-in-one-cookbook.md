@@ -76,11 +76,11 @@ Symfony AI 是一套 PHP 组件集合，为 PHP/Symfony 应用提供完整的 AI
 | **agent** | ✅ | — | ❌ | ❌ |
 | **store** | ✅ | ❌ | — | ❌ |
 | **chat** | ✅ | ✅ | ❌ | — |
-| **ai-bundle** | ✅ | ✅ (dev) | ✅ (dev) | ✅ (dev) |
+| **ai-bundle** | ✅ | ✅ (require-dev) | ✅ (require-dev) | ✅ (require-dev) |
 | **mcp-bundle** | ❌ | ❌ | ❌ | ❌ |
 | **mate** | ❌ | ❌ | ❌ | ❌ |
 
-> `platform` 是一切的基石。`agent`、`store`、`chat` 都依赖它。`mcp-bundle` 和 `mate` 独立于 Symfony AI 核心，仅依赖 `mcp/sdk`。
+> `platform` 是一切的基石。`agent`、`store`、`chat` 都依赖它。`ai-bundle` 在 `require-dev` 中引用其他组件，仅用于开发测试集成桥接器，运行时只硬性依赖 `platform`。`mcp-bundle` 和 `mate` 独立于 Symfony AI 核心，仅依赖 `mcp/sdk`。
 
 ### 1.4 快速安装
 
@@ -1579,12 +1579,13 @@ echo $result->asText();
 
 ```php
 use Symfony\AI\Agent\Agent;
-use Symfony\AI\Agent\Bridge\Clock\Clock;
 use Symfony\AI\Agent\Toolbox\{Toolbox, AgentProcessor};
+use Symfony\AI\Agent\Toolbox\ToolFactory\MemoryToolFactory;
+use Symfony\Component\Clock\Clock;
 
-$toolbox = new Toolbox([new \Symfony\Component\Clock\Clock()],
-    (new MemoryToolFactory())->addTool(Clock::class, 'clock', 'Get current time', 'now')
-);
+$factory = (new MemoryToolFactory())
+    ->addTool(Clock::class, 'clock', 'Get current date and time', 'now');
+$toolbox = new Toolbox([new Clock()], $factory);
 $processor = new AgentProcessor($toolbox);
 $agent = new Agent($platform, 'gpt-4o-mini', [$processor], [$processor]);
 
