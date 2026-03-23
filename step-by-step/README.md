@@ -7,18 +7,25 @@
 | 模块 | 功能 | 涉及文档 |
 |------|------|---------|
 | **Platform** | AI 平台连接与调用 | 所有文档 |
-| **Chat** | 对话持久化管理 | 02, 10, 11, 13, 14, 17 |
-| **Agent** | 智能体 + 工具调用 | 03, 04, 05, 08, 09, 10, 11, 12, 13, 15, 16, 17, 18 |
+| **Chat** | 对话持久化管理 | 02, 10, 11, 13, 14, 17, 23 |
+| **Agent** | 智能体 + 工具调用 | 03, 04, 05, 08, 09, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 22, 23 |
 | **Store** | 向量存储与检索 | 04, 08, 10, 18 |
-| **Agent MultiAgent** | 多智能体编排 | 05, 11, 18 |
-| **StructuredOutput** | 结构化数据输出 | 06, 11, 12, 13, 14, 16, 18 |
-| **多模态 Content** | 图片/音频/PDF 处理 | 07, 12 |
-| **Agent Memory** | 长期记忆 | 08, 10, 14 |
-| **Agent Bridge（搜索/维基）** | Brave、Wikipedia、Tavily 搜索 | 03, 09, 10, 16 |
-| **Agent Bridge Filesystem** | 文件系统操作 | 13, 17 |
+| **Agent MultiAgent** | 多智能体编排 | 05, 11, 18, 23 |
+| **Agent Subagent** | Agent 间委托 | 23 |
+| **StructuredOutput** | 结构化数据输出 | 06, 11, 12, 13, 14, 16, 18, 19, 21, 22 |
+| **Image Content** | 图片输入/生成 | 07, 12, 19, 21, 22 |
+| **Audio Content** | 音频输入/TTS/STT | 07, 20, 21, 22 |
+| **Video Content** | 视频输入/分析 | 21 |
+| **Document Content** | PDF/文档处理 | 07 |
+| **Agent Memory** | 长期记忆 | 08, 10, 14, 23 |
+| **Agent Bridge（搜索/维基）** | Brave、Wikipedia、Tavily 搜索 | 03, 09, 10, 16, 23 |
+| **Agent Bridge Filesystem** | 文件系统操作 | 13, 17, 22, 23 |
 | **Agent Bridge Mapbox** | 地理编码 | 15 |
 | **Agent Bridge OpenMeteo** | 天气查询 | 15 |
-| **Agent Bridge Clock** | 当前时间 | 03, 09, 15, 16 |
+| **Agent Bridge Clock** | 当前时间 | 03, 09, 15, 16, 20, 23 |
+| **Toolbox Events** | 工具调用生命周期事件 | 23 |
+| **Platform (ElevenLabs)** | 语音 STT/TTS | 20, 22 |
+| **Platform (Gemini)** | 多模态视觉/音频/视频 | 20, 21 |
 
 ## 教程列表（从浅到深）
 
@@ -53,12 +60,27 @@
 | 16 | [自动化报告生成](./16-automated-report-generation.md) | 行业周报 / 竞品监控报告 | Platform + Agent + Tavily + StructuredOutput | ⭐⭐⭐⭐ |
 | 17 | [AI 智能文件管理助手](./17-ai-file-management-assistant.md) | 文件整理归档 / 内容索引 | Platform + Agent + Filesystem + Chat | ⭐⭐⭐ |
 
+### 多模态应用
+
+| # | 文档 | 场景 | 核心模块 | 复杂度 |
+|---|------|------|---------|--------|
+| 19 | [AI 图片生成与编辑流水线](./19-image-generation-and-editing-pipeline.md) | 电商配图生成 / 视觉评审 | Platform + Image + Agent + StructuredOutput | ⭐⭐⭐ |
+| 20 | [语音交互 AI 助手](./20-voice-interactive-assistant.md) | 语音客服 / 语音导航 | Platform + Audio + ElevenLabs STT/TTS + Agent | ⭐⭐⭐ |
+| 21 | [视频内容分析与总结](./21-video-content-analysis.md) | 视频审核 / 教学摘要 | Platform + Video + Gemini + StructuredOutput | ⭐⭐⭐ |
+| 22 | [多模态内容生产流水线](./22-multimodal-content-creation-pipeline.md) | 营销内容自动化 | Platform + Image + Audio + Agent + Filesystem | ⭐⭐⭐⭐ |
+
 ### 综合：全模块整合
 
 | # | 文档 | 场景 | 核心模块 | 复杂度 |
 |---|------|------|---------|--------|
 | 10 | [完整 RAG 聊天系统](./10-rag-chat-with-persistence.md) | 企业级智能客服平台 | 全部模块 | ⭐⭐⭐⭐ |
 | 18 | [文档智能分类与路由](./18-document-classification-routing.md) | 企业文档自动处理管道 | Platform + StructuredOutput + MultiAgent + Store | ⭐⭐⭐⭐ |
+
+### 终极：CrewAI 风格多智能体协作
+
+| # | 文档 | 场景 | 核心模块 | 复杂度 |
+|---|------|------|---------|--------|
+| 23 | [PHP 版 CrewAI：协作智能体团队](./23-crewai-style-agent-team.md) | 多角色 Agent 协作 | 全部模块 + Subagent + Events + Messenger | ⭐⭐⭐⭐⭐ |
 
 ## 阅读建议
 
@@ -67,3 +89,5 @@
 3. **快速上手**：先看 01（理解基础 API），再看 10（理解全貌）
 4. **关注特定工具**：看模块对照表，找到使用你关注的模块的文档
 5. **真实项目参考**：11-18 是从 GitHub/行业调研中提炼的 2025 年热门 LLM 应用场景
+6. **多模态应用**：19-22 覆盖图片、语音、视频等多媒体场景
+7. **终极挑战**：23 是最高级场景 — PHP 版 CrewAI 多智能体协作团队
