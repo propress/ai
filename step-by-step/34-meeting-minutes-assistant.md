@@ -550,6 +550,7 @@ foreach ($analysis->improvementSuggestions as $suggestion) {
 require 'vendor/autoload.php';
 
 use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory as OpenAiPlatformFactory;
 use Symfony\AI\Platform\StructuredOutput\PlatformSubscriber;
 use Symfony\AI\Store\Bridge\Postgres\Distance;
 use Symfony\AI\Store\Bridge\Postgres\Store as PostgresStore;
@@ -577,7 +578,7 @@ $vectorStore->setup();
 $dispatcher = new EventDispatcher();
 $dispatcher->addSubscriber(new PlatformSubscriber());
 
-$embeddingPlatform = \Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory::create(
+$embeddingPlatform = OpenAiPlatformFactory::create(
     apiKey: $_ENV['OPENAI_API_KEY'],
     eventDispatcher: $dispatcher,
 );
