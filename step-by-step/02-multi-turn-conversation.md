@@ -88,7 +88,7 @@ composer require symfony/ai-mongo-db-message-store      # MongoDB
 composer require symfony/ai-session-message-store       # Symfony Session
 composer require symfony/ai-cache-message-store         # PSR-6 Cache
 composer require symfony/ai-cloudflare-message-store    # Cloudflare Workers KV
-composer require symfony/ai-surrealdb-message-store     # SurrealDB
+composer require symfony/ai-surreal-db-message-store     # SurrealDB
 composer require symfony/ai-meilisearch-message-store   # Meilisearch
 ```
 
