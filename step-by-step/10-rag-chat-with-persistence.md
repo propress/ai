@@ -574,15 +574,15 @@ $results = $retriever->retrieve('退货政策和运费');
 
 ```php
 use Symfony\AI\Agent\Agent;
-use Symfony\AI\Agent\InputProcessor\MemoryInputProcessor;
+use Symfony\AI\Agent\Bridge\Clock\Clock;
+use Symfony\AI\Agent\Bridge\SimilaritySearch\SimilaritySearch;
 use Symfony\AI\Agent\InputProcessor\SystemPromptInputProcessor;
 use Symfony\AI\Agent\Memory\EmbeddingProvider;
+use Symfony\AI\Agent\Memory\MemoryInputProcessor;
 use Symfony\AI\Agent\Memory\StaticMemoryProvider;
-use Symfony\AI\Agent\OutputProcessor\AgentProcessor;
-use Symfony\AI\Agent\Tool\SimilaritySearch;
+use Symfony\AI\Agent\Toolbox\AgentProcessor;
 use Symfony\AI\Agent\Toolbox\FaultTolerantToolbox;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\Clock;
 use Symfony\AI\Platform\Model;
 use Symfony\Component\Clock\NativeClock;
 
