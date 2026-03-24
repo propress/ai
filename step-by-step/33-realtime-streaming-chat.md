@@ -267,7 +267,12 @@ final class ChatStreamController
     #[Route('/api/chat/stream', methods: ['POST'])]
     public function stream(Request $request): StreamedResponse
     {
-        $userMessage = $request->getPayload()->getString('message');
+        $userMessage = trim($request->getPayload()->getString('message'));
+
+        // 基本输入验证
+        if ('' === $userMessage || mb_strlen($userMessage) > 10000) {
+            return new StreamedResponse(status: 400);
+        }
 
         return new StreamedResponse(function () use ($userMessage): void {
             $messages = new MessageBag(
