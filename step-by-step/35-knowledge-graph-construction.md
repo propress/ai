@@ -434,7 +434,7 @@ foreach ($allEntities as $entity) {
         $existing = $uniqueEntities[$key];
         $mergedDescription = $existing->description;
 
-        if (false === mb_strpos($mergedDescription, $entity->description)) {
+        if (!str_contains($mergedDescription, $entity->description)) {
             $mergedDescription .= '；' . $entity->description;
         }
 
@@ -876,7 +876,7 @@ foreach ($techEntities as $entity) {
         echo "  查询失败: {$e->getMessage()}\n";
     }
 
-    // 避免请求过快
+    // Wikipedia API 速率限制，间隔 0.3 秒
     usleep(300000);
 }
 
