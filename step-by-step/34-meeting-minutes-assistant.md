@@ -557,7 +557,11 @@ use Symfony\AI\Store\Document\Vectorizer;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 // 连接 PostgreSQL（需已安装 pgvector 扩展）
-$pdo = new \PDO($_ENV['DATABASE_URL']);
+$pdo = new \PDO(
+    'pgsql:host=localhost;port=5432;dbname=meetings',
+    'user',
+    'pass',
+);
 $vectorStore = new PostgresStore(
     connection: $pdo,
     tableName: 'meeting_vectors',
@@ -803,7 +807,7 @@ $messages = new MessageBag(
 $response = $agent->call($messages);
 
 echo "助手回复：\n";
-echo $response->asText() . "\n";
+echo $response->getContent() . "\n";
 
 // 查看 SimilaritySearch 引用了哪些文档
 if ([] !== $searchTool->usedDocuments) {
@@ -837,10 +841,8 @@ use Symfony\AI\Agent\InputProcessor\SystemPromptInputProcessor;
 use Symfony\AI\Chat\Bridge\Doctrine\DoctrineDbalMessageStore;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory;
-use Symfony\AI\Platform\Message\Content\Text;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
-use Symfony\AI\Platform\Message\UserMessage;
 use Symfony\AI\Platform\StructuredOutput\PlatformSubscriber;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -887,29 +889,17 @@ $chat = new Chat(
 
 // --- 多轮对话示例 ---
 
-// 第一轮：初始化对话
-$initialMessages = new MessageBag(
-    Message::ofUser('帮我回顾一下上周产品评审会的主要决议'),
-);
-$chat->initiate($initialMessages);
+// 第一轮：提交问题并获取回复
+$response = $chat->submit(Message::ofUser('帮我回顾一下上周产品评审会的主要决议'));
+echo "助手：" . $response->getContent() . "\n\n";
 
-// 提交问题并获取回复
-$response = $chat->submit(new UserMessage(
-    new Text('帮我回顾一下上周产品评审会的主要决议'),
-));
-echo "助手：{$response->asText()}\n\n";
-
-// 第二轮：追问细节
-$response = $chat->submit(new UserMessage(
-    new Text('其中关于移动端的决议，具体是谁负责的？'),
-));
-echo "助手：{$response->asText()}\n\n";
+// 第二轮：追问细节（Chat 自动携带上一轮对话上下文）
+$response = $chat->submit(Message::ofUser('其中关于移动端的决议，具体是谁负责的？'));
+echo "助手：" . $response->getContent() . "\n\n";
 
 // 第三轮：继续深入
-$response = $chat->submit(new UserMessage(
-    new Text('他的截止日期是什么时候？需要哪些资源支持？'),
-));
-echo "助手：{$response->asText()}\n\n";
+$response = $chat->submit(Message::ofUser('他的截止日期是什么时候？需要哪些资源支持？'));
+echo "助手：" . $response->getContent() . "\n\n";
 ```
 
 > **提示：** `DoctrineDbalMessageStore` 将完整的对话历史（包括系统消息、用户消息、助手回复）序列化为 JSON 存入关系数据库。它使用 Symfony Serializer 组件处理 `MessageBag` 的序列化/反序列化，支持所有消息类型。
@@ -991,11 +981,8 @@ $spokenSummary = "会议纪要摘要：{$minutes->title}，{$minutes->date}。"
 
 $result = $elevenLabs->invoke('eleven_multilingual_v2', new Text($spokenSummary));
 
-// 保存为音频文件
-file_put_contents(
-    '/path/to/meeting-summary.mp3',
-    $result->asBinaryString(),
-);
+// 保存为音频文件（BinaryResult 提供 asFile() 快捷方法）
+$result->asFile('/path/to/meeting-summary.mp3');
 
 echo "语音摘要已生成：meeting-summary.mp3\n";
 ```
