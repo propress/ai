@@ -148,7 +148,19 @@ echo $result->asText();
 当系统提示词需要包含动态变量时，可以使用 `Template`：
 
 ```php
+use Symfony\AI\Platform\EventListener\TemplateRendererListener;
 use Symfony\AI\Platform\Message\Template;
+use Symfony\AI\Platform\Message\TemplateRenderer\TemplateRendererRegistry;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+// Template 功能需要注册 TemplateRendererListener
+$dispatcher = new EventDispatcher();
+$dispatcher->addSubscriber(new TemplateRendererListener(new TemplateRendererRegistry()));
+
+$platform = PlatformFactory::create(
+    $_ENV['ANTHROPIC_API_KEY'],
+    eventDispatcher: $dispatcher,
+);
 
 $messages = new MessageBag(
     Message::forSystem(Template::string(
@@ -167,6 +179,8 @@ $result = $platform->invoke('claude-sonnet-4-20250514', $messages, [
 ```
 
 `Template::string()` 使用简单的 `{variable}` 占位符替换。如果需要更复杂的表达式逻辑，可以使用 `Template::expression()`，它基于 Symfony ExpressionLanguage 组件。
+
+> **🏭 生产建议：** 在 Symfony 项目中使用 AI Bundle 时，`TemplateRendererListener` 会作为服务自动注册，无需手动配置。上面的手动注册方式仅用于独立脚本场景。
 
 ### MessageBag 的操作方法
 
