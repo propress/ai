@@ -591,7 +591,7 @@ export OPENAI_API_KEY="your-openai-api-key"
 ```
 
 ```php
-use Symfony\AI\Platform\Bridge\OpenAI\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 
 $platform = PlatformFactory::create($_ENV['OPENAI_API_KEY'], HttpClient::create());
 $agent = new Agent($platform, 'gpt-4o-mini', [$processor], [$processor]);
