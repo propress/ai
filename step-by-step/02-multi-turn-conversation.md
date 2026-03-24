@@ -57,7 +57,7 @@ Chat（对话管理器）
  │    ├── InputProcessor[]（输入处理管线，可选）
  │    └── OutputProcessor[]（输出处理管线，可选）
  └── MessageStore（消息持久化，实现 MessageStoreInterface & ManagedStoreInterface）
-      └── 10 种内置实现：InMemory / Redis / DBAL / MongoDB / Session / Cache / Cloudflare / SurrealDb / Meilisearch / Pogocache
+      └── 内置实现：InMemory / Redis / DBAL / MongoDB / Session / Cache / Cloudflare / SurrealDB / Meilisearch 等
 ```
 
 ---
@@ -247,7 +247,7 @@ $chatB  = new Chat($agent, $storeB);
 | `Cache\MessageStore` | `$cacheKey` | 缓存 key | `new MessageStore($cache, 'conv-123')` |
 | `Session\MessageStore` | `$sessionKey` | Session key | `new MessageStore($stack, 'conv-123')` |
 | `Cloudflare\MessageStore` | `$namespace` | KV Namespace | `new MessageStore($http, 'conv-123', $acct, $key)` |
-| `SurrealDb\MessageStore` | `$table` | 表名 | `new MessageStore($http, $database, 'conv-123', ...)` |
+| `SurrealDb\MessageStore` | `$table` | 表名 | `new MessageStore($http, $database, 'conv-123', $ns, $user, $pass)` |
 
 > **🔒 安全建议：** `conversationId` 不要使用可预测的值（如自增 ID）。建议使用 UUID 或加密 token，防止用户篡改 ID 访问他人对话（IDOR 漏洞）。
 
@@ -277,7 +277,7 @@ $store = new RedisMessageStore(
 );
 ```
 
-> **📝 知识扩展：** 所有需要序列化的 Store（Redis、MongoDB、Doctrine DBAL、Cloudflare、SurrealDb）内部使用 `MessageNormalizer`——一个 Symfony Serializer normalizer，负责将 `SystemMessage`、`UserMessage`、`AssistantMessage`、`ToolCallMessage` 转换为 JSON。每条消息存储时会自动保留其 UUID v7 标识符（`getId()`）、内容、工具调用、元数据和时间戳。反序列化时通过 `withId()` 恢复原始 UUID，确保消息跨请求的一致性。
+> **📝 知识扩展：** 所有需要序列化的 Store（Redis、MongoDB、Doctrine DBAL、Cloudflare、SurrealDB）内部使用 `MessageNormalizer`——一个 Symfony Serializer normalizer，负责将 `SystemMessage`、`UserMessage`、`AssistantMessage`、`ToolCallMessage` 转换为 JSON。每条消息存储时会自动保留其 UUID v7 标识符（`getId()`）、内容、工具调用、元数据和时间戳。反序列化时通过 `withId()` 恢复原始 UUID，确保消息跨请求的一致性。
 
 ### 模拟 Web 场景：跨请求的对话
 
@@ -664,7 +664,7 @@ $chat = new Chat($agent, new InMemoryStore());
 | **MongoDB** | 灵活查询、大规模对话 | ✅ | ✅ | 🔶 快 | ✅ 强 | ✅ 推荐 |
 | **Doctrine DBAL** | 关系型数据库为主的应用 | ✅ | ✅ | 🔶 中等 | ✅ 强 | ✅ 推荐 |
 | **Cloudflare KV** | 边缘计算、全球分布 | ✅ | ✅ | ⚡ 快 | ⚠️ 有限 | 特定场景 |
-| **SurrealDB** | 多模型数据库、图关系 | ✅ | ✅ | 🔶 中等 | ✅ 强 | 实验性 |
+| **SurrealDB** | 多模型数据库、图关系 | ✅ | ✅ | 🔶 中等 | ✅ 强 | 特定场景 |
 | **Meilisearch** | 需要全文搜索对话内容 | ✅ | ✅ | 🔶 快 | ✅ 全文 | 特定场景 |
 
 > **🏭 生产建议：** 根据你的实际需求选择存储后端：
@@ -697,7 +697,7 @@ $chat = new Chat($agent, new InMemoryStore());
 | `MessageNormalizer` | Symfony Serializer normalizer——各 Store 内部使用，自动将消息对象序列化/反序列化为 JSON，保留 UUID、元数据和时间戳 |
 | `InMemoryStore` | 进程内存存储，实现 `ResetInterface`。适合开发/测试 |
 | 对话隔离 | 每个 `Chat` 绑定一个 `Store` 实例。通过为每个对话创建使用不同标识符的 Store 来实现多对话隔离 |
-| 10 种存储后端 | InMemory / Redis / Doctrine DBAL / MongoDB / Session / Cache / Cloudflare / SurrealDb / Meilisearch / Pogocache |
+| 存储后端 | InMemory / Redis / Doctrine DBAL / MongoDB / Session / Cache / Cloudflare / SurrealDB / Meilisearch 等 |
 | Token 追踪 | `$response->getMetadata()->get('token_usage')` 获取本轮 Token 消耗——Metadata 从 `TextResult` 自动继承到 `AssistantMessage` |
 
 ## 下一步
