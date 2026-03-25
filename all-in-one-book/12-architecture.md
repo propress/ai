@@ -549,13 +549,12 @@ $response = $platform->invoke($model, $messages, [
 ```php
 // 分块大小直接影响 RAG 质量
 $splitter = new TextSplitTransformer(
-    maxLength: 500,     // 太大：检索噪声大；太小：缺少上下文
+    chunkSize: 500,     // 太大：检索噪声大；太小：缺少上下文
     overlap: 50,        // 重叠确保块间上下文连贯
-    separator: "\n\n",  // 按段落分割，保持语义完整
 );
 
 // 检索数量的权衡
-$results = $store->query(new VectorQuery($vector, limit: 5));
+$results = $store->query(new VectorQuery($vector), ['limit' => 5]);
 // limit 太大：噪声干扰 AI 回答质量
 // limit 太小：可能遗漏相关内容
 // 推荐：3-7 个结果

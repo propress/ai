@@ -384,9 +384,8 @@ $documents = $markdownLoader->load('/path/to/docs');
 $transformer = new ChainTransformer([
     new TextTrimTransformer(),           // 去除多余空白
     new TextSplitTransformer(
-        maxLength: 500,                   // 每块最大字符数
+        chunkSize: 500,                   // 每块最大字符数
         overlap: 50,                      // 块间重叠字符数（保证上下文连贯）
-        separator: "\n\n",                // 优先在段落边界分割
     ),
 ]);
 $chunks = $transformer->transform($documents);
@@ -404,7 +403,7 @@ echo sprintf("已索引 %d 个文档块\n", count($chunks));
 
 > 📝 **知识扩展：分块策略的选择**
 >
-> 分块大小（`maxLength`）和重叠（`overlap`）直接影响 RAG 质量：
+> 分块大小（`chunkSize`）和重叠（`overlap`）直接影响 RAG 质量：
 >
 > | 参数组合 | 效果 | 适用场景 |
 > |---------|------|---------|

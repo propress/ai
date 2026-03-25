@@ -419,9 +419,8 @@ use Symfony\AI\Chat\Bridge\MongoDb\MessageStore;
 
 $store = new MessageStore(
     client: $mongoClient,
-    database: 'chat_db',
-    collection: 'messages',
-    indexName: 'chat_session_001',  // 文档 ID
+    databaseName: 'chat_db',
+    collectionName: 'messages',
 );
 ```
 
@@ -790,10 +789,12 @@ $chat = new Chat($agent, $store);
 使用 Redis 存储键的命名约定管理多个对话：
 
 ```php
+use Symfony\AI\Chat\Bridge\Redis\MessageStore;
+
 // 用户 42 的不同对话
-$store1 = new RedisMessageStore($redis, indexName: 'user:42:chat:general');
-$store2 = new RedisMessageStore($redis, indexName: 'user:42:chat:code-review');
-$store3 = new RedisMessageStore($redis, indexName: 'user:42:chat:learning');
+$store1 = new MessageStore($redis, indexName: 'user:42:chat:general');
+$store2 = new MessageStore($redis, indexName: 'user:42:chat:code-review');
+$store3 = new MessageStore($redis, indexName: 'user:42:chat:learning');
 ```
 
 > 📌 会话隔离的核心原则：**一个 Store 实例 = 一个对话上下文**。通过不同的存储键、表名或命名空间来区分不同对话。

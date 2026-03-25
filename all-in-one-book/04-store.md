@@ -894,6 +894,7 @@ $store = new Store(
 
 ```php
 use Symfony\AI\Store\CombinedStore;
+use Symfony\AI\Store\Query\HybridQuery;
 
 // 用 Qdrant 做向量搜索，Elasticsearch 做全文搜索
 $combined = new CombinedStore(

@@ -310,7 +310,7 @@ class MyService
     public function generate(string $prompt): string
     {
         $response = $this->openai->invoke(
-            new Model('gpt-4o'),
+            'gpt-4o',
             $prompt,
         );
 
@@ -479,7 +479,7 @@ class ChatController extends AbstractController
         $userMessage = $request->request->get('message');
         $response = $agent->call(
             new MessageBag(Message::ofUser($userMessage)),
-            new Options(model: 'gpt-4o'),
+            ['model' => 'gpt-4o'],
         );
 
         return $this->json([

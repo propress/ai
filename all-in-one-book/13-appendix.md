@@ -83,7 +83,7 @@ use Symfony\AI\Store\Query\HybridQuery;
 
 // 索引文档
 $documents = (new TextFileLoader())->load($filePath);
-$chunks = (new TextSplitTransformer(maxLength: 500))->transform($documents);
+$chunks = (new TextSplitTransformer(chunkSize: 500))->transform($documents);
 $vectorizer->vectorize($chunks);
 $store->add($chunks);
 

@@ -271,7 +271,7 @@ use Symfony\AI\Platform\Message\MessageBag;
 
 // 1. 创建平台和消息存储
 $platform = PlatformFactory::create($_ENV['ANTHROPIC_API_KEY']);
-$store = new MessageStore(new \Redis(/* 连接配置 */));
+$store = new MessageStore(new \Redis(/* 连接配置 */), 'chat_session');
 $model = 'claude-3-5-sonnet-latest';
 
 // 2. 创建 Agent 和 Chat 实例

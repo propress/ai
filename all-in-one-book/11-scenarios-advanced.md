@@ -921,9 +921,8 @@ class DocumentIndexService
         $transformer = new ChainTransformer([
             new TextTrimTransformer(),
             new TextSplitTransformer(
-                maxLength: 500,
+                chunkSize: 500,
                 overlap: 50,
-                separator: "\n\n",
             ),
         ]);
         $chunks = $transformer->transform($documents);
