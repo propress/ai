@@ -246,11 +246,11 @@ public function myTemplate(string $id): string { }
 | **Redis** | `symfony/ai-redis-message-store` | 高性能生产环境 |
 | **Doctrine DBAL** | `symfony/ai-doctrine-message-store` | 关系数据库项目 |
 | **MongoDB** | `symfony/ai-mongo-db-message-store` | MongoDB 项目 |
-| **Cache** | 内置 | Symfony Cache 适配 |
-| **Session** | 内置 | Symfony Session |
+| **Cache** | `symfony/ai-cache-message-store` | Symfony Cache 适配 |
+| **Session** | `symfony/ai-session-message-store` | Symfony Session |
 | **Cloudflare** | `symfony/ai-cloudflare-message-store` | Cloudflare KV |
 | **Meilisearch** | `symfony/ai-meilisearch-message-store` | 带搜索的存储 |
-| **Pogocache** | 内置 | Pogocache |
+| **Pogocache** | `symfony/ai-pogocache-message-store` | Pogocache |
 | **SurrealDB** | `symfony/ai-surreal-db-message-store` | SurrealDB |
 | **InMemory** | 内置 | 测试用 |
 

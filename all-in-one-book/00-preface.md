@@ -236,14 +236,14 @@ composer require symfony/ai-chat    # 多轮对话
 **场景三：安装特定平台的桥接（Bridge）**
 
 ```bash
-# OpenAI 桥接（默认已包含在 Platform 中）
-composer require symfony/ai-platform-openai
+# OpenAI 桥接
+composer require symfony/ai-open-ai-platform
 
 # Anthropic 桥接
-composer require symfony/ai-platform-anthropic
+composer require symfony/ai-anthropic-platform
 
 # Google Gemini 桥接
-composer require symfony/ai-platform-google
+composer require symfony/ai-gemini-platform
 ```
 
 ### 5.3 获取 API 密钥

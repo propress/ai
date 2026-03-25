@@ -544,26 +544,26 @@ Agent 组件提供 **13 个内置桥接器**，每个桥接器是独立的 Compo
 
 | 桥接器 | Composer 包 | 工具名称 | 功能 | 需要 API Key |
 |--------|------------|---------|------|:---:|
-| **Brave** | `symfony/ai-agent-brave-bridge` | `brave_search` | Brave 隐私搜索引擎 | ✅ |
-| **Clock** | `symfony/ai-agent-clock-bridge` | `clock` | 获取当前日期和时间 | ❌ |
-| **Filesystem** | `symfony/ai-agent-filesystem-bridge` | `filesystem_read`, `filesystem_write` 等 10 个 | 文件系统操作（沙箱化） | ❌ |
-| **Firecrawl** | `symfony/ai-agent-firecrawl-bridge` | `firecrawl_scrape`, `firecrawl_crawl`, `firecrawl_map` | 专业网页爬虫（支持 JS 渲染） | ✅ |
-| **Mapbox** | `symfony/ai-agent-mapbox-bridge` | `geocode`, `reverse_geocode` | 地理编码 / 逆地理编码 | ✅ |
-| **Ollama** | `symfony/ai-agent-ollama-bridge` | `web_search`, `fetch_webpage` | 通过 Ollama 进行网页搜索 | ❌ |
-| **OpenMeteo** | `symfony/ai-agent-open-meteo-bridge` | `weather_current`, `weather_forecast` | 天气查询（免费开放 API） | ❌ |
-| **Scraper** | `symfony/ai-agent-scraper-bridge` | `scraper` | 简单网页文本提取 | ❌ |
-| **SerpApi** | `symfony/ai-agent-serp-api-bridge` | `serpapi` | Google 等搜索引擎 API | ✅ |
-| **SimilaritySearch** | `symfony/ai-agent-similarity-search-bridge` | `similarity_search` | 向量相似度文档检索 | ❌* |
-| **Tavily** | `symfony/ai-agent-tavily-bridge` | `tavily_search`, `tavily_extract` | AI 优化搜索 + 内容提取 | ✅ |
-| **Wikipedia** | `symfony/ai-agent-wikipedia-bridge` | `wikipedia_search`, `wikipedia_article` | 维基百科搜索与文章获取 | ❌ |
-| **Youtube** | `symfony/ai-agent-youtube-bridge` | `youtube_transcript` | YouTube 视频字幕获取 | ❌ |
+| **Brave** | `symfony/ai-brave-tool` | `brave_search` | Brave 隐私搜索引擎 | ✅ |
+| **Clock** | `symfony/ai-clock-tool` | `clock` | 获取当前日期和时间 | ❌ |
+| **Filesystem** | `symfony/ai-filesystem-tool` | `filesystem_read`, `filesystem_write` 等 10 个 | 文件系统操作（沙箱化） | ❌ |
+| **Firecrawl** | `symfony/ai-firecrawl-tool` | `firecrawl_scrape`, `firecrawl_crawl`, `firecrawl_map` | 专业网页爬虫（支持 JS 渲染） | ✅ |
+| **Mapbox** | `symfony/ai-mapbox-tool` | `geocode`, `reverse_geocode` | 地理编码 / 逆地理编码 | ✅ |
+| **Ollama** | `symfony/ai-ollama-tool` | `web_search`, `fetch_webpage` | 通过 Ollama 进行网页搜索 | ❌ |
+| **OpenMeteo** | `symfony/ai-open-meteo-tool` | `weather_current`, `weather_forecast` | 天气查询（免费开放 API） | ❌ |
+| **Scraper** | `symfony/ai-scraper-tool` | `scraper` | 简单网页文本提取 | ❌ |
+| **SerpApi** | `symfony/ai-serp-api-tool` | `serpapi` | Google 等搜索引擎 API | ✅ |
+| **SimilaritySearch** | `symfony/ai-similarity-search-tool` | `similarity_search` | 向量相似度文档检索 | ❌* |
+| **Tavily** | `symfony/ai-tavily-tool` | `tavily_search`, `tavily_extract` | AI 优化搜索 + 内容提取 | ✅ |
+| **Wikipedia** | `symfony/ai-wikipedia-tool` | `wikipedia_search`, `wikipedia_article` | 维基百科搜索与文章获取 | ❌ |
+| **Youtube** | `symfony/ai-youtube-tool` | `youtube_transcript` | YouTube 视频字幕获取 | ❌ |
 
 > 💡 标 ❌* 的 SimilaritySearch 不需要自身的 API Key，但需要 Platform（用于生成嵌入向量）和向量数据库（来自 Store 组件）。
 
 ### 5.2 使用示例：Tavily 搜索
 
 ```bash
-composer require symfony/ai-agent-tavily-bridge
+composer require symfony/ai-tavily-tool
 ```
 
 ```php
@@ -594,7 +594,7 @@ echo $result->getContent();
 ### 5.3 使用示例：SimilaritySearch 向量检索
 
 ```bash
-composer require symfony/ai-agent-similarity-search-bridge
+composer require symfony/ai-similarity-search-tool
 ```
 
 ```php

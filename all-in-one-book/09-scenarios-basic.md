@@ -198,16 +198,16 @@ use Symfony\AI\Platform\Event\ResultEvent;
 // 在调用前拦截——可以修改模型、输入或选项
 $dispatcher->addListener(InvocationEvent::class, function (InvocationEvent $event) {
     $this->logger->info('AI 调用开始', [
-        'model' => $event->model,
+        'model' => $event->getModel()->getName(),
     ]);
 });
 
 // 在结果返回后——记录 Token 使用量和耗时
 $dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
-    $metadata = $event->deferredResult->getMetadata();
+    $metadata = $event->getDeferredResult()->getMetadata();
     $tokenUsage = $metadata->get('token_usage');
     $this->logger->info('AI 调用完成', [
-        'model' => $event->model,
+        'model' => $event->getModel()->getName(),
         'prompt_tokens' => $tokenUsage?->getPromptTokens(),
         'completion_tokens' => $tokenUsage?->getCompletionTokens(),
     ]);

@@ -531,7 +531,7 @@ $response = $platform->invoke($model, $messages, [
 
 // 2. 限制上下文长度——防止历史累积
 $maxRounds = 10;
-$recentMessages = array_slice($messages->all(), -$maxRounds * 2);
+$recentMessages = array_slice($messages->getMessages(), -$maxRounds * 2);
 
 // 3. 设置 max_tokens——防止输出过长
 $response = $platform->invoke($model, $messages, [
@@ -595,12 +595,12 @@ class AiMonitoringSubscriber implements EventSubscriberInterface
     public function onInvocation(InvocationEvent $event): void
     {
         $this->logger->info('AI 调用开始', [
-            'model' => $event->model,
+            'model' => $event->getModel()->getName(),
             'request_id' => uniqid('ai-', true),
         ]);
 
         $this->metrics->increment('ai.invocations.total', [
-            'model' => $event->model,
+            'model' => $event->getModel()->getName(),
         ]);
     }
 
@@ -609,21 +609,21 @@ class AiMonitoringSubscriber implements EventSubscriberInterface
      */
     public function onResult(ResultEvent $event): void
     {
-        $metadata = $event->deferredResult->getMetadata();
+        $metadata = $event->getDeferredResult()->getMetadata();
         $tokenUsage = $metadata->get('token_usage');
 
         $this->logger->info('AI 调用完成', [
-            'model' => $event->model,
+            'model' => $event->getModel()->getName(),
             'prompt_tokens' => $tokenUsage?->getPromptTokens(),
             'completion_tokens' => $tokenUsage?->getCompletionTokens(),
         ]);
 
         if (null !== $tokenUsage) {
             $this->metrics->histogram('ai.tokens.prompt', $tokenUsage->getPromptTokens(), [
-                'model' => $event->model,
+                'model' => $event->getModel()->getName(),
             ]);
             $this->metrics->histogram('ai.tokens.completion', $tokenUsage->getCompletionTokens(), [
-                'model' => $event->model,
+                'model' => $event->getModel()->getName(),
             ]);
         }
     }
