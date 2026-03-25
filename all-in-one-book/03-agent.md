@@ -963,7 +963,6 @@ $embeddingMemory = new EmbeddingProvider(
     platform: $platform,                         // 用于生成嵌入向量
     model: new Model('text-embedding-3-small'),  // 嵌入模型
     vectorStore: $pineconeStore,                  // 向量存储（来自 Store 组件）
-    maxResults: 5,                                // 最多返回 5 条相关记忆
 );
 ```
 
