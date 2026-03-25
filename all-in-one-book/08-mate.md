@@ -225,9 +225,9 @@ Symfony Bridge 提供了对 Symfony Profiler 数据的 MCP 访问能力：
 
 | MCP 工具名 | 功能 | 参数 |
 |------------|------|------|
-| `symfony-profiler-list` | 列出所有 Profile | `limit`, `method`, `url`, `statusCode` |
+| `symfony-profiler-list` | 列出所有 Profile | `limit`, `method`, `url`, `ip`, `statusCode`, `context` |
 | `symfony-profiler-latest` | 获取最新 Profile | 无 |
-| `symfony-profiler-search` | 按条件搜索 Profile | `route`, `method`, `statusCode`, `from`, `to`, `limit` |
+| `symfony-profiler-search` | 按条件搜索 Profile | `route`, `method`, `statusCode`, `from`, `to`, `context`, `limit` |
 | `symfony-profiler-get` | 获取 Profile 详情 | `token` |
 
 **资源模板：**

@@ -62,7 +62,7 @@ class ProductService
     public function generateDescription(string $product): string
     {
         // 不关心底层用的是 OpenAI、Anthropic 还是 Ollama
-        return $this->platform->invoke($messages, $model)->asText();
+        return $this->platform->invoke($model, $messages)->asText();
     }
 }
 
@@ -505,7 +505,7 @@ use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 $platform = new CachePlatform($innerPlatform, $cache);
 
 // 注意：必须提供 prompt_cache_key
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'prompt_cache_key' => 'faq-'.md5($question),
     'prompt_cache_ttl' => 86400,  // 24 小时 TTL
 ]);
@@ -534,12 +534,12 @@ $maxRounds = 10;
 $recentMessages = array_slice($messages->all(), -$maxRounds * 2);
 
 // 3. 设置 max_tokens——防止输出过长
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'max_tokens' => 500,  // 限制输出长度
 ]);
 
 // 4. 用低 temperature 减少冗余——确定性回答更简洁
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'temperature' => 0.1,
 ]);
 ```

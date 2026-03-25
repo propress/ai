@@ -23,7 +23,7 @@ $messages = new MessageBag(
 );
 
 // 调用 AI（同步）
-$response = $platform->invoke($messages, $model);
+$response = $platform->invoke($model, $messages);
 $text = $response->asText();
 
 // 流式输出
@@ -32,7 +32,7 @@ foreach ($response->asStream() as $chunk) {
 }
 
 // 结构化输出
-$response = $platform->invoke($messages, $model, ['output' => MyDto::class]);
+$response = $platform->invoke($model, $messages, ['response_format' => MyDto::class]);
 $dto = $response->unwrap();
 
 // Metadata
@@ -46,11 +46,13 @@ $outputTokens = $metadata->getOutputTokens();
 ```php
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
+use Symfony\AI\Agent\Toolbox\AgentProcessor;
 use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
 
-// 创建 Agent
+// 创建 Agent（通过 AgentProcessor 连接工具箱）
 $toolbox = new Toolbox(new ReflectionToolAnalyzer(), [$tool1, $tool2]);
-$agent = new Agent($platform, $model, toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
 // 调用
 $response = $agent->call($messageBag);
@@ -60,18 +62,19 @@ echo $response->asText();
 $toolbox = new FaultTolerantToolbox($innerToolbox);
 
 // 多智能体编排
-$orchestrator = new Orchestrator($platform, $model, [
-    new Handoff($agent1, 'name1', '何时路由到此 Agent'),
-    new Handoff($agent2, 'name2', '何时路由到此 Agent'),
-]);
-$response = $orchestrator->call($messageBag);
+$orchestratorAgent = new Agent($platform, $model, name: 'orchestrator');
+$multiAgent = new MultiAgent($orchestratorAgent, [
+    new Handoff($agent1, ['关键词1', '关键词2']),
+    new Handoff($agent2, ['关键词3', '关键词4']),
+], $fallbackAgent);
+$response = $multiAgent->call($messageBag);
 ```
 
 ### 1.3 Store
 
 ```php
 use Symfony\AI\Store\Document\Loader\FileDirectoryLoader;
-use Symfony\AI\Store\Document\Transformer\TextSplitter;
+use Symfony\AI\Store\Document\Transformer\TextSplitTransformer;
 use Symfony\AI\Store\Document\Vectorizer;
 use Symfony\AI\Store\Query\VectorQuery;
 use Symfony\AI\Store\Query\TextQuery;
@@ -79,31 +82,33 @@ use Symfony\AI\Store\Query\HybridQuery;
 
 // 索引文档
 $documents = (new FileDirectoryLoader($dir))->load();
-$chunks = (new TextSplitter(maxLength: 500))->transform($documents);
+$chunks = (new TextSplitTransformer(maxLength: 500))->transform($documents);
 $vectorizer->vectorize($chunks);
 $store->add($chunks);
 
 // 查询
-$results = $store->query(new VectorQuery($vector, limit: 5));
-$results = $store->query(new TextQuery('关键词', limit: 5));
-$results = $store->query(new HybridQuery($vector, '关键词', limit: 5));
+$results = $store->query(new VectorQuery($vector), ['limit' => 5]);
+$results = $store->query(new TextQuery('关键词'), ['limit' => 5]);
+$results = $store->query(new HybridQuery($vector, '关键词'), ['limit' => 5]);
 ```
 
 ### 1.4 Chat
 
 ```php
 use Symfony\AI\Chat\Chat;
+use Symfony\AI\Platform\Message\MessageBag;
 
-$chat = new Chat($platform, $model, $messageStore);
+$agent = new Agent($platform, $model);
+$chat = new Chat($agent, $messageStore);
 
-// 发起对话
-$conversation = $chat->initiate(
+// 发起对话——initiate() 返回 void
+$chat->initiate(new MessageBag(
     Message::forSystem('系统提示'),
-);
+));
 
-// 提交消息
-$response = $chat->submit($conversation->getId(), '用户消息');
-echo $response->asText();
+// 提交消息——submit() 接收 UserMessage，返回 AssistantMessage
+$response = $chat->submit(Message::ofUser('用户消息'));
+echo $response->content;
 ```
 
 ### 1.5 MCP Bundle
@@ -382,10 +387,10 @@ security:
 
 ```php
 // ❌ 不会缓存——没有 prompt_cache_key
-$platform->invoke($messages, $model);
+$platform->invoke($model, $messages);
 
 // ✅ 会缓存
-$platform->invoke($messages, $model, [
+$platform->invoke($model, $messages, [
     'prompt_cache_key' => 'my-cache-key',
 ]);
 ```
@@ -399,17 +404,15 @@ $platform->invoke($messages, $model, [
 ```php
 // 修改前
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
-use Symfony\AI\Platform\Bridge\OpenAi\GPT;
 
 $platform = PlatformFactory::create($apiKey);
-$response = $platform->invoke($messages, new GPT(GPT::GPT_4O));
+$response = $platform->invoke('gpt-4o', $messages);
 
 // 修改后（只改 2 行）
 use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory;
-use Symfony\AI\Platform\Bridge\Anthropic\Claude;
 
 $platform = PlatformFactory::create($apiKey);
-$response = $platform->invoke($messages, new Claude(Claude::CLAUDE_3_5_SONNET));
+$response = $platform->invoke('claude-3-5-sonnet-latest', $messages);
 ```
 
 业务逻辑代码（`MessageBag`、`asText()`、`asStream()` 等）完全不需要修改。

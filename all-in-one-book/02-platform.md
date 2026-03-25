@@ -413,18 +413,19 @@ final class MessageBag
 {
     public function __construct(MessageInterface ...$messages) {}
 
+    public function getId(): AbstractUid&TimeBasedUidInterface     // 获取唯一 ID（UUID v7）
     public function add(MessageInterface $message): void          // 追加消息
-    public function prepend(MessageInterface $message): void      // 前置消息
     public function with(MessageInterface $message): self         // 不可变追加（返回新实例）
-    public function merge(MessageBag $other): void                // 合并另一个消息包
-    public function getAll(): array                               // 获取所有消息
-    public function getLast(): ?MessageInterface                  // 获取最后一条消息
-    public function getByRole(Role $role): array                  // 按角色筛选
+    public function merge(self $messageBag): self                 // 合并另一个消息包（返回新实例）
+    public function getMessages(): array                          // 获取所有消息
+    public function getSystemMessage(): ?SystemMessage            // 获取系统消息
+    public function getUserMessage(): ?UserMessage                // 获取第一条用户消息
     public function count(): int                                  // 消息总数
     public function withSystemMessage(SystemMessage $msg): self   // 替换系统消息
     public function withoutSystemMessage(): self                  // 移除系统消息
     public function containsImage(): bool                         // 是否包含图片
     public function containsAudio(): bool                         // 是否包含音频
+    public function getIterator(): \ArrayIterator                 // 迭代器支持
 }
 ```
 

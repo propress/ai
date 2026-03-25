@@ -32,7 +32,8 @@
 $httpClient = HttpClient::create();
 $platform = new OpenAiPlatform($httpClient, 'sk-...');
 $toolbox = new Toolbox(new ReflectionToolAnalyzer(), [new WeatherTool()]);
-$agent = new Agent($platform, $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, 'gpt-4o', [$agentProcessor], [$agentProcessor]);
 $response = $agent->call(new MessageBag(Message::ofUser('天气如何？')));
 ```
 

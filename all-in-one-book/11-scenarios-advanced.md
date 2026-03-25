@@ -93,7 +93,7 @@ $anthropic = AnthropicFactory::create($_ENV['ANTHROPIC_API_KEY']);
 $platform = new FailoverPlatform([$openai, $anthropic]);
 
 // 使用方式与单平台完全一致
-$response = $platform->invoke($messages, $model);
+$response = $platform->invoke($model, $messages);
 ```
 
 > 📝 **知识扩展：FailoverPlatform 的内部行为**
@@ -115,7 +115,7 @@ $response = $platform->invoke($messages, $model);
 >   │
 >   ├─ 3. 尝试调用
 >   │      try {
->   │          $result = $platform->invoke($messages, $model, $options);
+>   │          $result = $platform->invoke($model, $messages, $options);
 >   │          // 成功：从失败记录中移除该平台
 >   │          unset($failedPlatforms[$platform]);
 >   │          return $result;
@@ -150,7 +150,7 @@ $platform = new CachePlatform(
 );
 
 // 缓存调用——必须提供 prompt_cache_key
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'prompt_cache_key' => 'product-faq',     // 缓存键前缀（必须）
     'prompt_cache_ttl' => 3600,               // 缓存 TTL（可选，默认永不过期）
 ]);
@@ -334,7 +334,8 @@ $store = new Store($connectionPool);
 $store->add($documents);
 
 // 查询也使用本地 LLM
-$agent = new Agent($platform, 'llama3.1', toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, 'llama3.1', [$agentProcessor], [$agentProcessor]);
 $response = $agent->call($messages);
 
 // 整个流程中，数据完全不离开本地网络
@@ -495,8 +496,8 @@ PROMPT;
             Message::ofUser('请审核以下用户提交的内容：'."\n\n".$content),
         );
 
-        $response = $this->platform->invoke($messages, $this->model, [
-            'output' => ModerationResult::class,
+        $response = $this->platform->invoke($this->model, $messages, [
+            'response_format' => ModerationResult::class,
             'temperature' => 0.1,  // 低 temperature 确保判定一致性
         ]);
 
@@ -516,8 +517,8 @@ PROMPT;
             ),
         );
 
-        $response = $this->platform->invoke($messages, 'gpt-4o', [
-            'output' => ModerationResult::class,
+        $response = $this->platform->invoke('gpt-4o', $messages, [
+            'response_format' => ModerationResult::class,
             'temperature' => 0.1,
         ]);
 
@@ -560,8 +561,8 @@ $cachedPlatform = new CachePlatform($innerPlatform, $cache);
 $moderator = new ContentModerationService($cachedPlatform);
 
 // 在调用时提供缓存键
-$response = $cachedPlatform->invoke($messages, $model, [
-    'output' => ModerationResult::class,
+$response = $cachedPlatform->invoke($model, $messages, [
+    'response_format' => ModerationResult::class,
     'prompt_cache_key' => 'moderation-'.md5($content),  // 基于内容哈希
     'prompt_cache_ttl' => 86400,   // 审核结果缓存 24 小时
 ]);
@@ -679,53 +680,22 @@ use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
 use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
 
 // 1. 研究员——负责收集信息
+$researchToolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+    new TavilySearchTool($_ENV['TAVILY_API_KEY']),
+    new WikipediaTool(),
+]);
+$researchProcessor = new AgentProcessor($researchToolbox);
 $researcher = new Agent($platform, $model,
-    toolbox: new Toolbox(new ReflectionToolAnalyzer(), [
-        new TavilySearchTool($_ENV['TAVILY_API_KEY']),
-        new WikipediaTool(),
-    ]),
-    systemPrompt: <<<PROMPT
-你是一个高级技术研究员。你的任务是：
-
-1. 使用搜索工具收集全面、最新的信息
-2. 验证信息来源的可靠性
-3. 整理成结构化研究报告，包含：
-   - 关键发现（按重要性排序）
-   - 数据和统计信息
-   - 引用来源
-   - 竞品/替代方案对比
-4. 注重事实准确性，区分事实和观点
-PROMPT,
+    inputProcessors: [$researchProcessor],
+    outputProcessors: [$researchProcessor],
+    name: 'researcher',
 );
 
 // 2. 写手——负责撰写内容
-$writer = new Agent($platform, $model, systemPrompt: <<<PROMPT
-你是一个专业的技术写手。基于研究报告撰写技术文章。
-
-写作要求：
-1. 使用 Markdown 格式
-2. 开头有引人入胜的导语
-3. 内容有清晰的层次结构
-4. 包含代码示例（如果适用）
-5. 结尾有总结和展望
-6. 面向中高级 PHP 开发者
-7. 文章长度 2000-3000 字
-PROMPT,
-);
+$writer = new Agent($platform, $model, name: 'writer');
 
 // 3. 编辑——负责审核和优化
-$editor = new Agent($platform, $model, systemPrompt: <<<PROMPT
-你是一个资深技术编辑。审核文章的：
-
-1. 技术准确性——代码示例是否正确
-2. 逻辑完整性——论述是否有逻辑漏洞
-3. 可读性——是否易于理解
-4. 格式规范——Markdown 格式是否正确
-5. SEO 友好——标题和小标题是否包含关键词
-
-如果需要修改，直接修改后输出完整的最终版本。
-PROMPT,
-);
+$editor = new Agent($platform, $model, name: 'editor');
 ```
 
 ### 5.4 顺序流水线执行
@@ -769,22 +739,23 @@ echo "✅ 最终版本完成\n\n";
 echo $final->asText();
 ```
 
-### 5.5 使用 Orchestrator 实现自动编排
+### 5.5 使用 MultiAgent 实现自动编排
 
-对于更复杂的场景，使用 Orchestrator 让 AI 自动决定工作流程：
+对于更复杂的场景，使用 MultiAgent 让 AI 自动决定工作流程：
 
 ```php
 use Symfony\AI\Agent\MultiAgent\MultiAgent;
 use Symfony\AI\Agent\MultiAgent\Handoff;
 
-$orchestrator = new MultiAgent($platform, $model, [
-    new Handoff($researcher, 'researcher', '需要搜集信息、调研数据、分析竞品'),
-    new Handoff($writer, 'writer', '需要撰写文章、报告、文案'),
-    new Handoff($editor, 'editor', '需要审核、修改、优化文章内容'),
-]);
+$orchestratorAgent = new Agent($platform, $model, name: 'orchestrator');
+$multiAgent = new MultiAgent($orchestratorAgent, [
+    new Handoff($researcher, ['搜集信息', '调研数据', '分析竞品']),
+    new Handoff($writer, ['撰写文章', '写报告', '写文案']),
+    new Handoff($editor, ['审核', '修改', '优化文章内容']),
+], $writer);  // fallback 到写手
 
-// Orchestrator 自动分析任务，决定执行顺序
-$response = $orchestrator->call(new MessageBag(
+// MultiAgent 自动分析任务，决定路由到哪个 Agent
+$response = $multiAgent->call(new MessageBag(
     Message::ofUser('请帮我完成一篇关于 PHP 性能优化的技术博客'),
 ));
 ```

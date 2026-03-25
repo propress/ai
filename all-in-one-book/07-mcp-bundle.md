@@ -598,8 +598,9 @@ $mcpClient = new McpClient($transport);
 $toolbox = new McpToolbox($mcpClient);
 
 // 在 Agent 中使用
-$agent = new Agent($platform, $model, toolbox: $toolbox);
-$response = $agent->call('请帮我查询订单 ORD-20240115-00001 的状态');
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
+$response = $agent->call(new MessageBag(Message::ofUser('请帮我查询订单 ORD-20240115-00001 的状态')));
 ```
 
 ---

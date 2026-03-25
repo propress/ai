@@ -170,8 +170,9 @@ $toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
     new \Symfony\AI\Agent\Bridge\Clock\Clock(),
 ]);
 
-// 3. 创建 Agent
-$agent = new Agent($platform, $model, toolbox: $toolbox);
+// 3. 创建 Agent（通过 AgentProcessor 连接工具箱）
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
 // 4. 调用——Agent 自动决定是否需要工具
 $response = $agent->call(new MessageBag(
@@ -444,7 +445,8 @@ $toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
     $retriever,  // 自动注册为 similarity_search 工具
 ]);
 
-$agent = new Agent($platform, $model, toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
 // 3. 用户提问——Agent 自动：
 //    a) 识别需要检索文档
@@ -596,46 +598,30 @@ use Symfony\AI\Agent\MultiAgent\MultiAgent;
 use Symfony\AI\Agent\MultiAgent\Handoff;
 
 // 技术支持专家——配备运维工具
+$opsProcessor = new AgentProcessor($opsToolbox);
 $techAgent = new Agent(
     $platform, $model,
-    toolbox: $opsToolbox,  // 可选：包含服务器状态、日志搜索等工具
-    systemPrompt: <<<PROMPT
-你是技术支持专家。专注于解决 API 错误、系统故障、性能问题。
-
-回答规范：
-1. 先确认问题现象
-2. 分析可能原因（按可能性排序）
-3. 给出具体的排查步骤
-4. 如果有对应的文档链接，一并提供
-PROMPT,
+    inputProcessors: [$opsProcessor],
+    outputProcessors: [$opsProcessor],
+    name: 'technical',
 );
 
 // 账单客服专家
 $billingAgent = new Agent(
     $platform, $model,
-    systemPrompt: <<<PROMPT
-你是账单客服专家。处理定价咨询、退款申请、发票问题、订阅变更。
-
-回答规范：
-1. 态度友好，政策明确
-2. 涉及金额变更时，告知确切金额
-3. 退款需要确认退款方式和预计到账时间
-4. 升级/降级操作告知生效时间
-PROMPT,
+    name: 'billing',
 );
 
 // 功能顾问——帮助用户使用产品功能
 $featureAgent = new Agent(
     $platform, $model,
-    systemPrompt: '你是产品功能顾问。帮助用户理解和使用产品功能。'
-        .'用步骤化的方式引导用户完成操作。',
+    name: 'feature',
 );
 
 // 通用助手（兜底）
 $generalAgent = new Agent(
     $platform, $model,
-    systemPrompt: '你是通用客服助手。处理其他类别的用户问题。'
-        .'如果问题超出你的能力范围，建议用户联系人工客服。',
+    name: 'general',
 );
 ```
 
@@ -645,36 +631,33 @@ $generalAgent = new Agent(
 // 创建路由规则——Handoff 定义了每个 Agent 的触发条件
 $handoffs = [
     new Handoff(
-        agent: $techAgent,
-        name: 'technical',
-        when: 'bug, error, API, 故障, 性能, 部署, 500 错误, 超时, 崩溃, 日志',
+        to: $techAgent,
+        when: ['bug', 'error', 'API', '故障', '性能', '部署', '500 错误', '超时', '崩溃', '日志'],
     ),
     new Handoff(
-        agent: $billingAgent,
-        name: 'billing',
-        when: '价格, 退款, 发票, 订阅, 升级, 降级, 账单, 付费, 免费试用',
+        to: $billingAgent,
+        when: ['价格', '退款', '发票', '订阅', '升级', '降级', '账单', '付费', '免费试用'],
     ),
     new Handoff(
-        agent: $featureAgent,
-        name: 'feature',
-        when: '如何使用, 功能介绍, 操作步骤, 怎么设置, 使用教程',
+        to: $featureAgent,
+        when: ['如何使用', '功能介绍', '操作步骤', '怎么设置', '使用教程'],
     ),
     new Handoff(
-        agent: $generalAgent,
-        name: 'general',
-        when: '其他所有未明确匹配的问题',
+        to: $generalAgent,
+        when: ['其他', '一般问题'],
     ),
 ];
 
-// 创建调度员
-$orchestrator = new MultiAgent($platform, $model, $handoffs);
+// 创建调度员——需要一个 orchestrator Agent 作为路由决策者
+$orchestratorAgent = new Agent($platform, $model, name: 'orchestrator');
+$multiAgent = new MultiAgent($orchestratorAgent, $handoffs, $generalAgent);
 ```
 
 ### 4.6 使用调度员
 
 ```php
 // 调度员自动分析用户问题并路由到最合适的专家
-$response = $orchestrator->call(new MessageBag(
+$response = $multiAgent->call(new MessageBag(
     Message::ofUser('我调用 API 时一直返回 500 错误，怎么办？'),
 ));
 
@@ -682,13 +665,13 @@ echo $response->asText();
 // 自动路由到 technical Agent，给出详细的技术排查步骤
 
 // 另一个问题
-$response = $orchestrator->call(new MessageBag(
+$response = $multiAgent->call(new MessageBag(
     Message::ofUser('我想升级到企业版，价格是多少？'),
 ));
 // 自动路由到 billing Agent
 
 // 模糊问题
-$response = $orchestrator->call(new MessageBag(
+$response = $multiAgent->call(new MessageBag(
     Message::ofUser('产品挺好用的，给你们点赞！'),
 ));
 // 路由到 general Agent（兜底）
@@ -715,12 +698,12 @@ ai:
 // config/services.php
 $services->set('app.customer_service', MultiAgent::class)
     ->args([
-        service('ai.platform.open_ai'),
-        'gpt-4o',
+        service('ai.agent.orchestrator'),  // orchestrator Agent
         [
-            new Handoff(service('ai.agent.tech_support'), 'technical', '...'),
-            new Handoff(service('ai.agent.billing_support'), 'billing', '...'),
+            new Handoff(service('ai.agent.tech_support'), ['bug', 'error', 'API故障']),
+            new Handoff(service('ai.agent.billing_support'), ['价格', '退款', '账单']),
         ],
+        service('ai.agent.general'),  // fallback Agent
     ]);
 ```
 
@@ -773,7 +756,8 @@ $toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
     new WikipediaTool(),
 ]);
 
-$agent = new Agent($platform, $model, toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
 $response = $agent->call(new MessageBag(
     Message::forSystem(
@@ -910,11 +894,12 @@ $memoryProvider = new StaticMemoryProvider([
     '用户的项目遵循 PSR-12 编码规范',
 ]);
 
-// 创建带记忆的 Agent
+// 创建带记忆的 Agent——MemoryInputProcessor 是一个 InputProcessor
+$memoryProcessor = new MemoryInputProcessor([$memoryProvider]);
 $agent = new Agent(
     $platform,
     $model,
-    memoryProvider: $memoryProvider,
+    inputProcessors: [$memoryProcessor],
 );
 
 $response = $agent->call(new MessageBag(
@@ -952,7 +937,8 @@ $memoryProvider->add('用户的项目使用 Redis 做缓存层');
 //   → "用户的项目使用 Redis 做缓存层"
 // 然后注入到 System Message 中
 
-$agent = new Agent($platform, $model, memoryProvider: $memoryProvider);
+$memoryProcessor = new MemoryInputProcessor([$memoryProvider]);
+$agent = new Agent($platform, $model, inputProcessors: [$memoryProcessor]);
 $response = $agent->call(new MessageBag(
     Message::ofUser('怎么优化数据库查询？'),
 ));
