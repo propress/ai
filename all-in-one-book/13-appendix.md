@@ -27,7 +27,8 @@ $response = $platform->invoke($model, $messages);
 $text = $response->asText();
 
 // 流式输出
-foreach ($response->asStream() as $chunk) {
+$streamResponse = $platform->invoke($model, $messages, ['stream' => true]);
+foreach ($streamResponse->asStream() as $chunk) {
     echo $chunk;
 }
 
@@ -35,10 +36,11 @@ foreach ($response->asStream() as $chunk) {
 $response = $platform->invoke($model, $messages, ['response_format' => MyDto::class]);
 $dto = $response->asObject();
 
-// Metadata
+// Metadata & Token Usage
 $metadata = $response->getMetadata();
-$inputTokens = $metadata->getInputTokens();
-$outputTokens = $metadata->getOutputTokens();
+$tokenUsage = $metadata->get('token_usage');
+$promptTokens = $tokenUsage?->getPromptTokens();
+$completionTokens = $tokenUsage?->getCompletionTokens();
 ```
 
 ### 1.2 Agent
@@ -55,7 +57,7 @@ $agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
 // 调用
 $response = $agent->call($messageBag);
-echo $response->asText();
+echo $response->getContent();
 
 // 带容错的工具箱
 $toolbox = new FaultTolerantToolbox($innerToolbox);

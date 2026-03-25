@@ -804,8 +804,8 @@ $tokenUsage = $metadata->get('token_usage');
 if (null !== $tokenUsage) {
     printf(
         "输入: %d tokens | 输出: %d tokens | 总计: %d tokens\n",
-        $tokenUsage->getInputTokens(),
-        $tokenUsage->getOutputTokens(),
+        $tokenUsage->getPromptTokens(),
+        $tokenUsage->getCompletionTokens(),
         $tokenUsage->getTotalTokens(),
     );
 }
@@ -1338,8 +1338,8 @@ class CostTrackingSubscriber implements EventSubscriberInterface
         if (null !== $tokenUsage) {
             $this->costTracker->record(
                 model: $event->getModel()->getName(),
-                inputTokens: $tokenUsage->getInputTokens(),
-                outputTokens: $tokenUsage->getOutputTokens(),
+                inputTokens: $tokenUsage->getPromptTokens(),
+                outputTokens: $tokenUsage->getCompletionTokens(),
             );
         }
     }

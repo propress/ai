@@ -44,8 +44,8 @@ Bridge 模式的层次结构
   ├── supports(Model): bool         ├── supports(Model): bool
   │   判断是否支持该模型              │   判断是否处理该模型的结果
   │                                 │
-  └── request(Model, payload,       └── convert(Model, rawResult,
-        options): RawResult               options): DeferredResult
+  └── request(Model, payload,       └── convert(rawResult,
+        options): RawResult               options): ResultInterface
       构建并发送 HTTP 请求               将原始响应转换为类型化结果
 ```
 
@@ -300,7 +300,7 @@ try {
 
 } catch (RateLimitExceededException $e) {
     // 暂时：API 限速，可以重试
-    $retryAfter = $e->retryAfter ?? 30;
+    $retryAfter = $e->getRetryAfter() ?? 30;
     $this->logger->warning('AI 限速', ['retry_after' => $retryAfter]);
     // 方案 A：等待后重试
     // 方案 B：使用 FailoverPlatform 切换平台
@@ -610,19 +610,22 @@ class AiMonitoringSubscriber implements EventSubscriberInterface
     public function onResult(ResultEvent $event): void
     {
         $metadata = $event->deferredResult->getMetadata();
+        $tokenUsage = $metadata->get('token_usage');
 
         $this->logger->info('AI 调用完成', [
             'model' => $event->model,
-            'input_tokens' => $metadata->getInputTokens(),
-            'output_tokens' => $metadata->getOutputTokens(),
+            'prompt_tokens' => $tokenUsage?->getPromptTokens(),
+            'completion_tokens' => $tokenUsage?->getCompletionTokens(),
         ]);
 
-        $this->metrics->histogram('ai.tokens.input', $metadata->getInputTokens(), [
-            'model' => $event->model,
-        ]);
-        $this->metrics->histogram('ai.tokens.output', $metadata->getOutputTokens(), [
-            'model' => $event->model,
-        ]);
+        if (null !== $tokenUsage) {
+            $this->metrics->histogram('ai.tokens.prompt', $tokenUsage->getPromptTokens(), [
+                'model' => $event->model,
+            ]);
+            $this->metrics->histogram('ai.tokens.completion', $tokenUsage->getCompletionTokens(), [
+                'model' => $event->model,
+            ]);
+        }
     }
 }
 ```

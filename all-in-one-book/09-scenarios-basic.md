@@ -205,10 +205,11 @@ $dispatcher->addListener(InvocationEvent::class, function (InvocationEvent $even
 // 在结果返回后——记录 Token 使用量和耗时
 $dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
     $metadata = $event->deferredResult->getMetadata();
+    $tokenUsage = $metadata->get('token_usage');
     $this->logger->info('AI 调用完成', [
         'model' => $event->model,
-        'input_tokens' => $metadata->getInputTokens(),
-        'output_tokens' => $metadata->getOutputTokens(),
+        'prompt_tokens' => $tokenUsage?->getPromptTokens(),
+        'completion_tokens' => $tokenUsage?->getCompletionTokens(),
     ]);
 });
 ```
