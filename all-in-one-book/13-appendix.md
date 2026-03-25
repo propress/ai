@@ -33,7 +33,7 @@ foreach ($response->asStream() as $chunk) {
 
 // 结构化输出
 $response = $platform->invoke($model, $messages, ['response_format' => MyDto::class]);
-$dto = $response->unwrap();
+$dto = $response->asObject();
 
 // Metadata
 $metadata = $response->getMetadata();

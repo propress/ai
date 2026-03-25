@@ -290,7 +290,7 @@ use Symfony\AI\Agent\Exception\MaxIterationsExceededException;
 
 try {
     $response = $agent->call($messages);
-    return $response->asText();
+    return $response->getContent();
 
 } catch (AuthenticationException $e) {
     // 严重：API Key 问题，需要运维介入

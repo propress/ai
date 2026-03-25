@@ -501,7 +501,7 @@ PROMPT;
             'temperature' => 0.1,  // 低 temperature 确保判定一致性
         ]);
 
-        return $response->unwrap();
+        return $response->asObject();
     }
 
     /**
@@ -522,7 +522,7 @@ PROMPT;
             'temperature' => 0.1,
         ]);
 
-        return $response->unwrap();
+        return $response->asObject();
     }
 
     /**
