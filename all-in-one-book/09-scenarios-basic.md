@@ -229,14 +229,14 @@ $dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
                                  Chat 组件的内部流程
                                  ═══════════════════
 
-  initiate(systemPrompt)                    submit(conversationId, userMessage)
+  initiate(MessageBag)                      submit(UserMessage)
   ┌──────────────────┐                      ┌──────────────────────────────┐
-  │ 1. 创建 Conversation                     │ 1. 从 Store 加载消息历史       │
-  │    (UUID v7 作 ID)                       │ 2. 追加 UserMessage           │
-  │ 2. 保存 SystemMessage                   │ 3. 调用 Platform::invoke()    │
+  │ 1. 清空现有消息历史                       │ 1. 从 Store 加载消息历史       │
+  │    (store->drop())                      │ 2. 追加 UserMessage           │
+  │ 2. 保存初始消息                           │ 3. 调用 Agent::call()         │
   │    到 Store                              │ 4. 追加 AssistantMessage      │
-  │ 3. 返回 Conversation                    │ 5. 保存到 Store               │
-  └──────────────────┘                      │ 6. 返回 DeferredResult        │
+  │ 3. 返回 void                             │ 5. 保存到 Store               │
+  └──────────────────┘                      │ 6. 返回 AssistantMessage      │
                                             └──────────────────────────────┘
 
   Store 中的消息序列（每次 submit 后）：
@@ -347,30 +347,26 @@ class CustomerServiceController
     #[Route('/api/chat/start', methods: ['POST'])]
     public function startConversation(): JsonResponse
     {
-        $conversation = $this->chat->initiate(
+        // initiate() 清空历史并保存初始消息，返回 void
+        $this->chat->initiate(new MessageBag(
             Message::forSystem('你是专业客服，回答简洁有礼貌。'),
-        );
+        ));
 
-        return new JsonResponse([
-            'conversation_id' => $conversation->getId()->toString(),
-        ]);
+        return new JsonResponse(['status' => 'ok']);
     }
 
     #[Route('/api/chat/message', methods: ['POST'])]
     public function sendMessage(Request $request): JsonResponse
     {
-        $conversationId = $request->getPayload()->getString('conversation_id');
         $message = $request->getPayload()->getString('message');
 
         try {
-            $response = $this->chat->submit($conversationId, $message);
+            // submit() 接收 UserMessage，返回 AssistantMessage
+            $response = $this->chat->submit(Message::ofUser($message));
 
             return new JsonResponse([
-                'reply' => $response->asText(),
-                'metadata' => [
-                    'input_tokens' => $response->getMetadata()->getInputTokens(),
-                    'output_tokens' => $response->getMetadata()->getOutputTokens(),
-                ],
+                'reply' => $response->getContent(),
+                'metadata' => $response->getMetadata()->all(),
             ]);
         } catch (\Throwable $e) {
             return new JsonResponse(
@@ -393,10 +389,10 @@ $maxRounds = 20;  // 保留最近 20 轮对话
 
 // 策略 2：使用摘要压缩历史
 // 当历史超过阈值时，让 AI 生成摘要替换旧消息
-$summary = $platform->invoke(new MessageBag(
+$summary = $platform->invoke($model, new MessageBag(
     Message::forSystem('请用一段话总结以下对话的关键信息。'),
     Message::ofUser($oldHistoryText),
-), $model)->asText();
+))->asText();
 
 // 然后用摘要替换原始历史
 ```
@@ -1005,18 +1001,18 @@ print_r($result->glossaryUsed);// ["Agent→智能代理", "Toolbox→工具箱"
 
 ```php
 // 发起翻译对话
-$conversation = $chat->initiate(
+$chat->initiate(new MessageBag(
     Message::forSystem($systemPrompt),
-);
+));
 
 // 第一轮：翻译
-$chat->submit($conversation->getId(), '翻译以下内容：...');
+$chat->submit(Message::ofUser('翻译以下内容：...'));
 
 // 第二轮：修正——AI 记得之前的翻译
-$chat->submit($conversation->getId(), '把 "智能代理" 改为 "Agent"，保留英文原文');
+$chat->submit(Message::ofUser('把 "智能代理" 改为 "Agent"，保留英文原文'));
 
 // 第三轮：继续修正
-$chat->submit($conversation->getId(), '第二段的语句太长了，拆成两句');
+$chat->submit(Message::ofUser('第二段的语句太长了，拆成两句'));
 ```
 
 ---
@@ -1097,7 +1093,9 @@ class StreamingChatController
                 header('Cache-Control: no-cache');
                 header('X-Accel-Buffering: no');  // 禁用 Nginx 缓冲
 
-                $response = $this->platform->invoke('gpt-4o', $messages);
+                $response = $this->platform->invoke('gpt-4o', $messages, [
+                    'stream' => true,
+                ]);
 
                 foreach ($response->asStream() as $chunk) {
                     // SSE 格式：data: {json}\n\n
@@ -1179,26 +1177,40 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
 
 ### 7.5 结合 Chat 组件实现多轮流式对话
 
+> ⚠️ **注意**：`Chat::submit()` 返回的是 `AssistantMessage`，不是 `DeferredResult`，因此不支持流式输出。
+> 如果需要多轮对话 + 流式输出，需要自行管理消息历史并直接调用 Platform：
+
 ```php
 class MultiRoundStreamController
 {
     public function __construct(
-        private readonly ChatInterface $chat,
+        private readonly PlatformInterface $platform,
+        private readonly MessageStoreInterface&ManagedStoreInterface $store,
     ) {}
 
-    #[Route('/api/chat/stream/{conversationId}', methods: ['POST'])]
-    public function stream(string $conversationId, Request $request): StreamedResponse
+    #[Route('/api/chat/stream', methods: ['POST'])]
+    public function stream(Request $request): StreamedResponse
     {
         $userMessage = $request->getPayload()->getString('message');
 
-        return new StreamedResponse(function () use ($conversationId, $userMessage) {
+        return new StreamedResponse(function () use ($userMessage) {
             header('Content-Type: text/event-stream');
             header('Cache-Control: no-cache');
 
-            // submit() 返回的 DeferredResult 也支持 asStream()
-            $response = $this->chat->submit($conversationId, $userMessage);
+            // 1. 加载历史消息
+            $messages = $this->store->load();
+            $messages->add(Message::ofUser($userMessage));
 
+            // 2. 直接用 Platform 调用，启用流式
+            $response = $this->platform->invoke('gpt-4o', $messages, [
+                'stream' => true,
+            ]);
+
+            // 3. 流式输出
+            $fullContent = '';
             foreach ($response->asStream() as $chunk) {
+                $fullContent .= $chunk;
+
                 echo 'data: '.json_encode(
                     ['text' => $chunk],
                     JSON_UNESCAPED_UNICODE,
@@ -1209,6 +1221,10 @@ class MultiRoundStreamController
                 }
                 flush();
             }
+
+            // 4. 流结束后，手动保存完整响应到历史
+            $messages->add(Message::ofAssistant($fullContent));
+            $this->store->save($messages);
 
             echo "data: [DONE]\n\n";
             flush();
@@ -1279,11 +1295,11 @@ function safeInvoke(
         throw new \RuntimeException('AI 服务认证失败，请检查 API Key 配置');
     } catch (RateLimitExceededException $e) {
         // 可以实现退避重试
-        sleep($e->retryAfter ?? 5);
+        sleep($e->getRetryAfter() ?? 5);
         return safeInvoke($platform, $messages, $model, $options);
     } catch (ExceedContextSizeException) {
         // 输入过长，截断消息历史
-        $truncated = new MessageBag(...array_slice($messages->all(), -5));
+        $truncated = new MessageBag(...array_slice($messages->getMessages(), -5));
         return safeInvoke($platform, $truncated, $model, $options);
     } catch (ContentFilterException) {
         return '您的输入触发了安全过滤，请修改后重试。';

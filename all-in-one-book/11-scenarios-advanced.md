@@ -961,6 +961,8 @@ class KnowledgeBaseController
         #[Target('knowledge_assistant')]
         private readonly AgentInterface $agent,
         private readonly ChatInterface $chat,
+        private readonly PlatformInterface $platform,
+        private readonly MessageStoreInterface&ManagedStoreInterface $store,
     ) {}
 
     /**
@@ -969,36 +971,29 @@ class KnowledgeBaseController
     #[Route('/conversations', methods: ['POST'])]
     public function newConversation(): JsonResponse
     {
-        $conversation = $this->chat->initiate(
+        // initiate() 清空历史并保存初始消息，返回 void
+        $this->chat->initiate(new MessageBag(
             Message::forSystem('你是企业知识库助手。'),
-        );
+        ));
 
-        return new JsonResponse([
-            'conversation_id' => $conversation->getId()->toString(),
-        ]);
+        return new JsonResponse(['status' => 'ok']);
     }
 
     /**
      * 提交问题（普通模式）
      */
-    #[Route('/conversations/{id}/messages', methods: ['POST'])]
-    public function ask(string $id, Request $request): JsonResponse
+    #[Route('/conversations/messages', methods: ['POST'])]
+    public function ask(Request $request): JsonResponse
     {
         $question = $request->getPayload()->getString('question');
 
         try {
-            $response = $this->chat->submit($id, $question);
+            // submit() 接收 UserMessage，返回 AssistantMessage
+            $response = $this->chat->submit(Message::ofUser($question));
 
             return new JsonResponse([
                 'answer' => $response->getContent(),
-                'sources' => array_map(
-                    fn ($s) => ['title' => $s->getTitle(), 'url' => $s->getUrl()],
-                    $response->getSources(),
-                ),
-                'metadata' => [
-                    'input_tokens' => $response->getMetadata()->getInputTokens(),
-                    'output_tokens' => $response->getMetadata()->getOutputTokens(),
-                ],
+                'metadata' => $response->getMetadata()->all(),
             ]);
         } catch (\Throwable $e) {
             return new JsonResponse([
@@ -1008,20 +1003,32 @@ class KnowledgeBaseController
     }
 
     /**
-     * 提交问题（流式模式）
+     * 流式问答——需要绕过 Chat 组件，直接管理消息历史
+     * 因为 Chat::submit() 返回 AssistantMessage，不支持流式输出
      */
-    #[Route('/conversations/{id}/stream', methods: ['POST'])]
-    public function stream(string $id, Request $request): StreamedResponse
+    #[Route('/conversations/stream', methods: ['POST'])]
+    public function stream(Request $request): StreamedResponse
     {
         $question = $request->getPayload()->getString('question');
 
-        return new StreamedResponse(function () use ($id, $question) {
+        return new StreamedResponse(function () use ($question) {
             header('Content-Type: text/event-stream');
             header('Cache-Control: no-cache');
 
-            $response = $this->chat->submit($id, $question);
+            // 1. 加载历史并追加用户消息
+            $messages = $this->store->load();
+            $messages->add(Message::ofUser($question));
 
+            // 2. 直接调用 Platform，启用流式
+            $response = $this->platform->invoke('gpt-4o', $messages, [
+                'stream' => true,
+            ]);
+
+            // 3. 流式输出
+            $fullContent = '';
             foreach ($response->asStream() as $chunk) {
+                $fullContent .= $chunk;
+
                 echo 'data: '.json_encode(
                     ['text' => $chunk],
                     JSON_UNESCAPED_UNICODE,
@@ -1032,6 +1039,10 @@ class KnowledgeBaseController
                 }
                 flush();
             }
+
+            // 4. 保存完整回复到历史
+            $messages->add(Message::ofAssistant($fullContent));
+            $this->store->save($messages);
 
             echo "data: [DONE]\n\n";
             flush();
