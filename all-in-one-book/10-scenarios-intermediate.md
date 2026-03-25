@@ -38,7 +38,7 @@
 
 Agent 的核心机制是**工具调用循环（Tool Call Loop）**。理解这个循环是掌握所有 Agent 场景的关键：
 
-```
+```php
 Agent::call($messages) 的内部流程
 ═══════════════════════════════
 
@@ -188,7 +188,7 @@ echo $response->getContent();
 
 Toolbox 在执行工具时会分发一系列事件，你可以通过监听这些事件实现审计、限流、Mock 等功能：
 
-```
+```php
 Toolbox::execute() 的事件流
 ═══════════════════════════
 
@@ -322,7 +322,7 @@ ai:
 
 ### 3.2 架构概述——RAG 两阶段管线
 
-```
+```text
 RAG 的完整生命周期
 ═════════════════
 
@@ -496,9 +496,9 @@ $results = $store->query(new HybridQuery(
 > Postgres Store 支持丰富的查询选项：
 > ```php
 > $results = $store->query(new VectorQuery($vector, limit: 10), [
->     'where' => 'metadata->>\'category\' = :category',  // SQL 条件过滤
->     'params' => ['category' => '退货政策'],
->     'maxScore' => 0.8,   // 最大距离阈值（过滤低相关结果）
+> 'where' => 'metadata->>\'category\' = :category', // SQL 条件过滤
+> 'params' => ['category' => '退货政策'],
+> 'maxScore' => 0.8, // 最大距离阈值（过滤低相关结果）
 > ]);
 > ```
 > 通过 `where` 子句，你可以在向量搜索前先用元数据过滤——这在多分类知识库中特别有用。
@@ -531,7 +531,7 @@ $ranked = $reranker->rerank($query, $candidates, limit: 5);
 
 ### 4.2 架构概述——Orchestrator 决策机制
 
-```
+```text
 多智能体路由的内部流程
 ══════════════════════
 
@@ -824,7 +824,7 @@ $toolbox = new Toolbox([
 
 ### 6.2 架构概述——记忆注入机制
 
-```
+```php
 Memory 系统的完整架构
 ═══════════════════
 

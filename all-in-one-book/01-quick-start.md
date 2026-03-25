@@ -101,7 +101,7 @@ php verify.php
 
 Symfony AI 
 
-```
+```text
 创建 Platform ──▶ 构建消息 ──▶ 调用模型 ──▶ 消费结果
 ```
 
@@ -149,7 +149,7 @@ OPENAI_API_KEY=sk-your-key php chat.php
 
 
 
-```
+```text
 Symfony AI 的核心组件包括：
 1. Platform — 统一的 AI 平台接口，支持 33+ 平台
 2. Agent — 智能代理框架，支持工具调用和任务编排
@@ -334,7 +334,7 @@ OPENAI_API_KEY=sk-your-key php stream.php
 
 ### 5.2 
 
-```
+```php
 $platform->invoke()           invoke 返回 DeferredResult
         │
         ▼
@@ -441,7 +441,7 @@ OPENAI_API_KEY=sk-your-key php structured.php
 
 ### 6.3 
 
-```
+```php
 SentimentResult::class
         │
         ▼

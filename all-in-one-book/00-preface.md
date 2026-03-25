@@ -50,7 +50,7 @@ AI
 
  REST API Symfony AI 
 
-```
+```text
 直接调用 REST API：
   ❌ 每个平台的 API 格式不同，需要分别学习
   ❌ 缺少类型安全，容易出错
@@ -324,7 +324,7 @@ OPENAI_API_KEY=sk-your-key php hello.php
 
 
 
-```
+```text
 Symfony AI 是一套为 PHP 开发者打造的 AI 集成工具包，让你可以通过统一的接口轻松调用
 OpenAI、Anthropic 等 33+ AI 平台的能力。
 ```
@@ -335,7 +335,7 @@ OpenAI、Anthropic 等 33+ AI 平台的能力。
 
 
 
-```
+```php
 ┌─────────────────────────────────────────────────────────────┐
 │ PlatformFactory::create()                                   │
 │  ↓ 创建一个 Platform 实例，封装了与 OpenAI 的通信细节         │

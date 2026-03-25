@@ -40,7 +40,7 @@
 
 ### 2.2 架构概述——三层防御
 
-```
+```text
 高可用架构的三层防御
 ══════════════════
 
@@ -105,28 +105,28 @@ $response = $platform->invoke($model, $messages);
 > ═══════════════════════════════════
 >
 > for 每个 Platform in 列表:
->   │
->   ├─ 1. 检查速率限制器（RateLimiter）
->   │      如果该平台之前失败过，速率限制器控制多久后重试
->   │
->   ├─ 2. 检查失败记录（WeakMap<Platform, timestamp>）
->   │      如果该平台在 WeakMap 中有失败记录，且未通过速率限制器检查
->   │      → 跳过该平台，尝试下一个
->   │
->   ├─ 3. 尝试调用
->   │      try {
->   │          $result = $platform->invoke($model, $messages, $options);
->   │          // 成功：从失败记录中移除该平台
->   │          unset($failedPlatforms[$platform]);
->   │          return $result;
->   │      }
->   │
->   └─ 4. 失败处理
->          catch (\Throwable $e) {
->              // 记录失败：$failedPlatforms[$platform] = now
->              // 记录日志
->              // 继续尝试下一个平台
->          }
+> │
+> ├─ 1. 检查速率限制器（RateLimiter）
+> │ 如果该平台之前失败过，速率限制器控制多久后重试
+> │
+> ├─ 2. 检查失败记录（WeakMap<Platform, timestamp>）
+> │ 如果该平台在 WeakMap 中有失败记录，且未通过速率限制器检查
+> │ → 跳过该平台，尝试下一个
+> │
+> ├─ 3. 尝试调用
+> │ try {
+> │ $result = $platform->invoke($model, $messages, $options);
+> │ // 成功：从失败记录中移除该平台
+> │ unset($failedPlatforms[$platform]);
+> │ return $result;
+> │ }
+> │
+> └─ 4. 失败处理
+> catch (\Throwable $e) {
+> // 记录失败：$failedPlatforms[$platform] = now
+> // 记录日志
+> // 继续尝试下一个平台
+> }
 >
 > // 所有平台都失败 → throw RuntimeException
 > ```
@@ -166,8 +166,8 @@ $response = $platform->invoke($model, $messages, [
 >
 > 输入哈希的计算规则：
 > - string 输入 → MD5($input)
-> - array 输入  → MD5(json_encode($input))
-> - MessageBag  → MessageBag::getId()->toString()  ← 注意！
+> - array 输入 → MD5(json_encode($input))
+> - MessageBag → MessageBag::getId()->toString() ← 注意！
 > ```
 >
 > **重要陷阱**：`MessageBag` 使用 UUID v7 作为 ID，每次 `new MessageBag()` 都会生成新 ID。这意味着：
@@ -256,7 +256,7 @@ ai:
 
 ### 3.2 架构概述
 
-```
+```text
 本地模型部署架构
 ══════════════
 
@@ -388,7 +388,7 @@ $platform = new FailoverPlatform(
 
 ### 4.2 架构概述
 
-```
+```text
 内容审核流水线
 ══════════════
 
@@ -635,7 +635,7 @@ class CommentController
 
 ### 5.2 架构概述
 
-```
+```text
 CrewAI 风格：多智能体顺序流水线
 ══════════════════════════════
 
@@ -806,7 +806,7 @@ for ($i = 0; $i < $maxIterations; $i++) {
 
 ### 6.2 完整架构
 
-```
+```text
 端到端企业知识库系统架构
 ══════════════════════
 
@@ -1060,15 +1060,15 @@ class KnowledgeBaseController
 
 | 检查项 | 状态 | 说明 |
 |--------|:----:|------|
-| FailoverPlatform 配置 | ☐ | 至少配置 2 个 AI 平台 |
-| CachePlatform 配置 | ☐ | 使用 Redis 缓存池 |
-| PostgreSQL pgvector 扩展 | ☐ | `CREATE EXTENSION vector;` |
-| Redis 连接 | ☐ | 对话历史 + 响应缓存 |
-| Nginx 流式配置 | ☐ | `proxy_buffering off;` |
-| API Key 环境变量 | ☐ | 不要硬编码 |
-| 日志和监控 | ☐ | Platform 事件监听 |
-| 错误处理 | ☐ | try/catch + 优雅降级 |
-| 文档定期重新索引 | ☐ | Cron / Symfony Messenger |
+| FailoverPlatform 配置 | [ ] | 至少配置 2 个 AI 平台 |
+| CachePlatform 配置 | [ ] | 使用 Redis 缓存池 |
+| PostgreSQL pgvector 扩展 | [ ] | `CREATE EXTENSION vector;` |
+| Redis 连接 | [ ] | 对话历史 + 响应缓存 |
+| Nginx 流式配置 | [ ] | `proxy_buffering off;` |
+| API Key 环境变量 | [ ] | 不要硬编码 |
+| 日志和监控 | [ ] | Platform 事件监听 |
+| 错误处理 | [ ] | try/catch + 优雅降级 |
+| 文档定期重新索引 | [ ] | Cron / Symfony Messenger |
 
 ---
 

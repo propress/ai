@@ -99,8 +99,8 @@ composer require symfony/ai-bundle
 > ```php
 > // config/bundles.php
 > return [
->     // ...
->     Symfony\AI\AiBundle\AiBundle::class => ['all' => true],
+> // ...
+> Symfony\AI\AiBundle\AiBundle::class => ['all' => true],
 > ];
 > ```
 
@@ -263,7 +263,7 @@ ai:
 
 **行为逻辑**：
 
-```
+```text
 调用 ai.platform.failover
   ├── 尝试 open_ai → 成功 → 返回结果
   ├── open_ai 失败 → 尝试 anthropic → 成功 → 返回结果
@@ -691,7 +691,7 @@ AI Bundle 提供了完整的 Symfony Web Profiler 集成，在开发环境下自
 
 在 `kernel.debug = true`（开发环境）时，`DebugCompilerPass` 自动为所有 AI 服务添加 Traceable 装饰器：
 
-```
+```php
 HTTP 请求
     ↓
 Traceable* 装饰器记录调用数据（模型、输入、输出、耗时）
@@ -719,10 +719,10 @@ Web Profiler 渲染 AI 面板
 1. 在 Symfony 调试工具栏中点击 **AI** 图标
 2. 或访问 `/_profiler/latest` → 点击 **AI** 标签页
 3. 可以查看：
-   - 所有平台 API 调用的详细信息（模型、Token 用量、耗时）
-   - Agent 的完整执行链（输入 → 工具调用 → 输出）
-   - 工具调用记录（参数和返回值）
-   - 消息存储的读写操作
+ - 所有平台 API 调用的详细信息（模型、Token 用量、耗时）
+ - Agent 的完整执行链（输入 → 工具调用 → 输出）
+ - 工具调用记录（参数和返回值）
+ - 消息存储的读写操作
 
 ### 8.4 TraceablePlatform 示例
 
@@ -761,7 +761,7 @@ final class TraceablePlatform implements PlatformInterface
 
 ### 8.5 生产环境行为
 
-```
+```text
 kernel.debug: false（生产环境）
   └── DebugCompilerPass 检测到非 debug 模式 → 直接返回
   └── 所有 AI 服务为原始实现 → 零性能开销
@@ -860,7 +860,7 @@ class HrTools
 
 `IsGrantedToolAttributeListener` 监听 `ToolCallArgumentsResolved` 事件：
 
-```
+```php
 AI 决定调用工具
     ↓
 参数解析完成 → 触发 ToolCallArgumentsResolved 事件

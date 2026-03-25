@@ -12,7 +12,7 @@
 
 Symfony AI 的核心架构思想是**Bridge 模式**——将业务逻辑与具体 AI 平台实现完全分离。这个设计让你可以在不修改任何业务代码的情况下切换 AI 平台。
 
-```
+```text
 Bridge 模式的层次结构
 ═══════════════════
 
@@ -33,7 +33,7 @@ Bridge 模式的层次结构
 
 **每个 Bridge 的内部结构**：
 
-```
+```text
 一个 Bridge 由两个核心接口的实现组成
 ═══════════════════════════════════
 
@@ -79,7 +79,7 @@ class ProductService
 
 缓存、容灾、日志、限速等横切关注点通过装饰器模式层层叠加。每个装饰器都实现 `PlatformInterface`，对调用方完全透明：
 
-```
+```text
 装饰器叠加示意（从外到内）
 ═══════════════════════
 
@@ -123,7 +123,7 @@ ai:
 
 Agent 的处理器管线是一个灵活的拦截器链，让你在 AI 调用前后插入自定义逻辑：
 
-```
+```php
 Agent::call() 的完整处理器管线
 ══════════════════════════════
 
@@ -215,7 +215,7 @@ class LoggingProcessor implements InputProcessorInterface, OutputProcessorInterf
 
 ### 2.1 Platform 异常
 
-```
+```text
 Symfony\AI\Platform\Exception\
 ├── ExceptionInterface (marker)
 │
@@ -255,7 +255,7 @@ Symfony\AI\Platform\Exception\
 
 ### 2.2 Agent 异常
 
-```
+```text
 Symfony\AI\Agent\Exception\
 ├── ExceptionInterface (marker)
 │

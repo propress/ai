@@ -35,7 +35,7 @@
 
 ### 2.2 架构概述
 
-```
+```php
 ┌──────────┐     ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
 │  用户输入  │ ──▶│  构建 MessageBag│ ──▶│ Platform::invoke() │ ──▶│ Contract 序列化│
 │ (文本问题) │     │ (System+User) │     │    (分发事件)      │     │  (转换格式)    │
@@ -226,7 +226,7 @@ $dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
 
 ### 3.2 架构概述
 
-```
+```php
                                  Chat 组件的内部流程
                                  ═══════════════════
 
@@ -305,8 +305,8 @@ echo $response->getContent();
 > `Chat::__construct()` 对 store 参数使用了 PHP 交叉类型（intersection type）：
 > ```php
 > public function __construct(
->     private readonly AgentInterface $agent,
->     private readonly MessageStoreInterface&ManagedStoreInterface $store,
+> private readonly AgentInterface $agent,
+> private readonly MessageStoreInterface&ManagedStoreInterface $store,
 > )
 > ```
 > 这意味着 store 必须**同时**实现两个接口：`MessageStoreInterface`（读写消息）和 `ManagedStoreInterface`（管理会话生命周期）。所有内置的 Chat Bridge（Redis、Doctrine、MongoDB 等）都满足此要求。
@@ -410,7 +410,7 @@ $summary = $platform->invoke($model, new MessageBag(
 
 ### 4.2 架构概述
 
-```
+```php
 结构化输出的内部流程
 ══════════════════
 
@@ -688,7 +688,7 @@ foreach ($feedbacks as $feedback) {
 
 ### 5.2 架构概述
 
-```
+```php
 多模态消息的构建方式
 ══════════════════
 
@@ -887,7 +887,7 @@ echo $response->asText();
 
 翻译助手的核心是精心设计的 System Prompt——它定义了翻译规则、术语表和质量标准。这是 **Prompt Engineering** 的经典应用：
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │          System Prompt（翻译指令）         │
 │                                         │
@@ -1030,7 +1030,7 @@ $chat->submit(Message::ofUser('第二段的语句太长了，拆成两句'));
 
 ### 7.2 架构概述
 
-```
+```text
 完整的流式对话架构
 ══════════════════
 

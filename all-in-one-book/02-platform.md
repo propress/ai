@@ -107,7 +107,7 @@ interface ResultConverterInterface
 
  Bridge 
 
-```
+```text
 Bridge/OpenAi/
 ├── PlatformFactory.php     # 工厂类，一行创建平台实例
 ├── ModelCatalog.php        # 该平台的模型目录（含能力定义）
@@ -124,7 +124,7 @@ Bridge/OpenAi/
 
  `$platform->invoke('gpt-4o', $messageBag, $options)` 
 
-```
+```php
 应用代码
     │
     ▼

@@ -25,7 +25,7 @@ Store AI ——****AI API ** AI **
 
  AI APIOpenAIAnthropicGemini ****""
 
-```
+```yaml
 # 第一轮请求
 用户: "我叫张三"
 AI: "你好张三！"
@@ -37,7 +37,7 @@ AI: "抱歉，我不知道你的名字。"  ← 上下文丢失！
 
 **** API
 
-```
+```yaml
 # 第二轮请求（附带完整历史）
 消息历史: [
     {"role": "user", "content": "我叫张三"},
@@ -73,7 +73,7 @@ Chat `symfony/ai-chat` Symfony AI ****
 
 Chat Agent 
 
-```
+```text
 用户请求
    │
    ▼
@@ -474,7 +474,7 @@ $store = new MessageStore(
 
 ### 4.9 
 
-```
+```text
 需要持久化吗？
 ├── 否  →  InMemory（测试/原型）
 │          Session（Web 临时对话）

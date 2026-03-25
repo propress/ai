@@ -74,7 +74,7 @@ flowchart TD
 
 Agent 
 
-```
+```php
 Agent::call($messages, $options)
     │
     ├─ 1. 创建 Input(model, messageBag, options)
@@ -442,7 +442,7 @@ final class Toolbox implements ToolboxInterface
 
 
 
-```
+```php
 Toolbox::execute(ToolCall $toolCall)
     │
     ├─ 1. 根据 toolCall.name 查找工具元数据
@@ -942,7 +942,7 @@ $staticMemory = new StaticMemoryProvider(
 
 
 
-```
+```text
 ## Static Memory
 
 - 公司名称：Acme Corp
@@ -1120,7 +1120,7 @@ final class Handoff
 
 ### 8.4 
 
-```
+```php
 MultiAgent::call($messages)
     │
     ├── 1. 提取用户消息文本
