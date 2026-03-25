@@ -500,7 +500,7 @@ $store = new MessageStore(
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\InMemory\Store;
-use Symfony\AI\Platform\Bridge\OpenAI\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
@@ -579,7 +579,7 @@ foreach ($messages as $message) {
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\Bridge\Cache\MessageStore;
-use Symfony\AI\Platform\Bridge\OpenAI\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -809,7 +809,7 @@ Chat 可以无缝包装一个配置了工具的 Agent，实现多轮对话中的
 ```php
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\Attribute\AsTool;
+use Symfony\AI\Agent\Toolbox\Attribute\AsTool;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\InMemory\Store;
 use Symfony\AI\Platform\Message\Message;
@@ -856,19 +856,25 @@ echo $response2->getContent();
 
 ```php
 use Symfony\AI\Agent\Agent;
-use Symfony\AI\Agent\InputProcessor\StoreInputProcessor;
+use Symfony\AI\Agent\Bridge\SimilaritySearch\SimilaritySearch;
+use Symfony\AI\Agent\Toolbox\AgentProcessor;
+use Symfony\AI\Agent\Toolbox\Toolbox;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\Bridge\Redis\MessageStore as ChatMessageStore;
-use Symfony\AI\Store\Bridge\ChromaDB\Store as VectorStore;
+use Symfony\AI\Store\Bridge\ChromaDb\Store as VectorStore;
 
 // 1. 向量存储（RAG 知识库）
-$vectorStore = new VectorStore(/* ChromaDB 配置 */);
+$vectorStore = new VectorStore(/* ChromaDb 配置 */);
 
-// 2. Agent 配置 RAG 输入处理器
+// 2. Agent 配置 RAG 工具
+$similaritySearch = new SimilaritySearch($vectorizer, $vectorStore);
+$toolbox = new Toolbox([$similaritySearch]);
+$agentProcessor = new AgentProcessor($toolbox);
 $agent = new Agent(
     platform: $platform,
     model: 'gpt-4o',
-    inputProcessors: [new StoreInputProcessor($vectorStore)],
+    inputProcessors: [$agentProcessor],
+    outputProcessors: [$agentProcessor],
 );
 
 // 3. Chat 消息存储（对话历史）
@@ -952,11 +958,10 @@ use Symfony\AI\Agent\Agent;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\Bridge\Redis\MessageStore;
 use Symfony\AI\Chat\MessageNormalizer;
-use Symfony\AI\Platform\Bridge\OpenAI\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 // --- 初始化基础组件 ---
@@ -1026,10 +1031,10 @@ echo sprintf("共 %d 条消息\n", count($history->getMessages()));
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\Attribute\AsTool;
+use Symfony\AI\Agent\Toolbox\Attribute\AsTool;
 use Symfony\AI\Chat\Chat;
 use Symfony\AI\Chat\Bridge\Cache\MessageStore;
-use Symfony\AI\Platform\Bridge\OpenAI\PlatformFactory;
+use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;

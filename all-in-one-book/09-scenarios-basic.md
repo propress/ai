@@ -519,7 +519,7 @@ enum Sentiment: string
 <?php
 
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
-use Symfony\AI\Platform\Bridge\OpenAi\GPT;
+use Symfony\AI\Platform\Bridge\OpenAi\Gpt;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
@@ -730,6 +730,7 @@ composer require symfony/ai-platform symfony/ai-open-ai-platform
 ```php
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\Content\Image;
+use Symfony\AI\Platform\Message\Content\ImageUrl;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 方式 1：从本地文件加载（自动 base64 编码）
@@ -743,15 +744,15 @@ $messages = new MessageBag(
 // 方式 2：从 URL 加载（平台直接请求 URL，无需本地下载）
 $messages = new MessageBag(
     Message::ofUser(
-        Image::fromUrl('https://example.com/photo.png'),
+        new ImageUrl('https://example.com/photo.png'),
         '这张图片中有什么？',
     ),
 );
 
-// 方式 3：从 base64 数据加载
+// 方式 3：从 data URL 加载
 $messages = new MessageBag(
     Message::ofUser(
-        Image::fromBase64($base64Data, 'image/jpeg'),
+        Image::fromDataUrl("data:image/jpeg;base64,{$base64Data}"),
         '分析这张图片。',
     ),
 );
@@ -920,7 +921,7 @@ echo $response->asText();
 <?php
 
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
-use Symfony\AI\Platform\Bridge\OpenAi\GPT;
+use Symfony\AI\Platform\Bridge\OpenAi\Gpt;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 

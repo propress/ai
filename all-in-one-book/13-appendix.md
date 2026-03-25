@@ -74,7 +74,7 @@ $response = $multiAgent->call($messageBag);
 ### 1.3 Store
 
 ```php
-use Symfony\AI\Store\Document\Loader\FileDirectoryLoader;
+use Symfony\AI\Store\Document\Loader\TextFileLoader;
 use Symfony\AI\Store\Document\Transformer\TextSplitTransformer;
 use Symfony\AI\Store\Document\Vectorizer;
 use Symfony\AI\Store\Query\VectorQuery;
@@ -82,7 +82,7 @@ use Symfony\AI\Store\Query\TextQuery;
 use Symfony\AI\Store\Query\HybridQuery;
 
 // 索引文档
-$documents = (new FileDirectoryLoader($dir))->load();
+$documents = (new TextFileLoader())->load($filePath);
 $chunks = (new TextSplitTransformer(maxLength: 500))->transform($documents);
 $vectorizer->vectorize($chunks);
 $store->add($chunks);

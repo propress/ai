@@ -430,16 +430,16 @@ echo sprintf("已索引 %d 个文档块\n", count($chunks));
 ### 3.6 查询阶段：检索增强生成
 
 ```php
-use Symfony\AI\Store\Retriever\SimilaritySearchRetriever;
+use Symfony\AI\Agent\Bridge\SimilaritySearch\SimilaritySearch;
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
 
-// 1. 创建检索器
-$retriever = new SimilaritySearchRetriever($store, $vectorizer);
+// 1. 创建检索工具
+$similaritySearch = new SimilaritySearch($vectorizer, $store);
 
 // 2. 作为工具集成到 Agent
 $toolbox = new Toolbox([
-    $retriever,  // 自动注册为 similarity_search 工具
+    $similaritySearch,  // 自动注册为 similarity_search 工具
 ]);
 
 $agentProcessor = new AgentProcessor($toolbox);
@@ -743,13 +743,15 @@ composer require symfony/ai-platform symfony/ai-anthropic-platform \
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
-use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
+use Symfony\AI\Agent\Bridge\Tavily\Tavily;
+use Symfony\AI\Agent\Bridge\Wikipedia\Wikipedia;
+use Symfony\Component\HttpClient\HttpClient;
 
 // 创建搜索工具箱
+$httpClient = HttpClient::create();
 $toolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),
-    new WikipediaTool(),
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),
+    new Wikipedia($httpClient),
 ]);
 
 $agentProcessor = new AgentProcessor($toolbox);
@@ -798,10 +800,11 @@ foreach ($sources as $source) {
 
 ```php
 // 组合多种搜索工具——AI 自动选择最合适的
+$httpClient = HttpClient::create();
 $toolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),   // 通用 Web 搜索
-    new WikipediaTool(),                              // 知识/概念查询
-    new FirecrawlTool($_ENV['FIRECRAWL_API_KEY']),   // 深度页面爬取
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),   // 通用 Web 搜索
+    new Wikipedia($httpClient),                          // 知识/概念查询
+    new FirecrawlTool($_ENV['FIRECRAWL_API_KEY']),       // 深度页面爬取
 ]);
 
 // AI 会根据问题类型自动选择工具：

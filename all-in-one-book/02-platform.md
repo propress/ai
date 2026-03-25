@@ -1548,12 +1548,12 @@ $failoverPlatform = new FailoverPlatform([
 Platform 支持通过 `TemplateRendererInterface` 在消息中使用模板变量：
 
 ```php
-use Symfony\AI\Platform\Message\TemplateRenderer\Template;
+use Symfony\AI\Platform\Message\Template;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 定义模板化的系统消息
-$template = new Template(
+$template = Template::string(
     '你是一名精通 {{ language }} 的编程顾问，请用 {{ tone }} 的语气回答。',
 );
 

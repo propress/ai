@@ -411,7 +411,7 @@ class DatabaseQueryTool
 ### 3.3 工具权限控制（AI Bundle）
 
 ```php
-use Symfony\AI\AiBundle\Attribute\IsGrantedTool;
+use Symfony\AI\AiBundle\Security\Attribute\IsGrantedTool;
 
 // 只有管理员才能使用的危险工具
 #[AsTool(name: 'delete_record', description: '删除数据库记录')]
@@ -813,8 +813,8 @@ class KnowledgeBaseTest extends TestCase
         $store = new InMemoryStore();
         $store->add($this->createTestDocuments());
 
-        $retriever = new SimilaritySearchRetriever($store, $mockVectorizer);
-        $results = $retriever->search('退货政策');
+        $retriever = new Retriever($store, $mockVectorizer);
+        $results = iterator_to_array($retriever->retrieve('退货政策'));
 
         $this->assertNotEmpty($results);
         $this->assertStringContainsString('退货', $results[0]->getContent());

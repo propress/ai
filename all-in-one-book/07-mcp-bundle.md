@@ -585,8 +585,12 @@ MCP Bundle 不仅可以作为服务端暴露工具，还可以作为**客户端*
 
 ### 8.2 在 Agent 中使用远程 MCP 工具
 
+> ⚠️ 以下为概念示例，展示 MCP 工具如何与 Agent 集成。实际集成方式请参考最新文档。
+
 ```php
-use Symfony\AI\Agent\Toolbox\McpToolbox;
+use Symfony\AI\Agent\Agent;
+use Symfony\AI\Agent\Toolbox\AgentProcessor;
+use Symfony\AI\Agent\Toolbox\Toolbox;
 use Mcp\Client\Client as McpClient;
 use Mcp\Client\Transport\Http\StreamableHttpTransport as HttpClientTransport;
 
@@ -594,8 +598,8 @@ use Mcp\Client\Transport\Http\StreamableHttpTransport as HttpClientTransport;
 $transport = new HttpClientTransport('http://order-service.internal/mcp');
 $mcpClient = new McpClient($transport);
 
-// 创建 MCP 工具箱（自动获取远程工具列表）
-$toolbox = new McpToolbox($mcpClient);
+// 将 MCP 工具注册到 Toolbox 中
+$toolbox = new Toolbox($mcpTools);
 
 // 在 Agent 中使用
 $agentProcessor = new AgentProcessor($toolbox);

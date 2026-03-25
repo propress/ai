@@ -675,13 +675,15 @@ CrewAI 风格：多智能体顺序流水线
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
-use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
+use Symfony\AI\Agent\Bridge\Tavily\Tavily;
+use Symfony\AI\Agent\Bridge\Wikipedia\Wikipedia;
+use Symfony\Component\HttpClient\HttpClient;
 
 // 1. 研究员——负责收集信息
+$httpClient = HttpClient::create();
 $researchToolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),
-    new WikipediaTool(),
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),
+    new Wikipedia($httpClient),
 ]);
 $researchProcessor = new AgentProcessor($researchToolbox);
 $researcher = new Agent($platform, $model,
