@@ -424,8 +424,7 @@ $response = $platform->invoke('claude-3-5-sonnet-latest', $messages);
 
 ```php
 public function __construct(
-    PlatformInterface $platform,
-    ModelInterface $model,
+    AgentInterface $agent,
     MessageStoreInterface&ManagedStoreInterface $store,
 )
 ```
@@ -434,7 +433,125 @@ public function __construct(
 
 ---
 
-## 9. 推荐学习资源
+## 9. 实战注意事项
+
+### 9.1 调试指南：AI 返回异常时如何排查
+
+当 AI 返回空响应、异常或不符合预期的结果时，按以下步骤排查：
+
+**第一步：检查网络和认证**
+
+```php
+try {
+    $response = $platform->invoke('gpt-4o', 'Hello');
+    echo $response->asText();
+} catch (AuthenticationException $e) {
+    // API Key 无效或过期
+    // 检查环境变量是否正确设置
+    echo 'API Key 错误: ' . $e->getMessage();
+} catch (\Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface $e) {
+    // 网络连接问题
+    echo '网络错误: ' . $e->getMessage();
+}
+```
+
+**第二步：检查请求和响应内容**
+
+使用 Platform 事件系统记录完整的请求和响应：
+
+```php
+use Symfony\AI\Platform\Event\InvocationEvent;
+use Symfony\AI\Platform\Event\ResultEvent;
+
+$dispatcher->addListener(InvocationEvent::class, function (InvocationEvent $event) {
+    // 记录发送给 AI 的完整输入
+    error_log('AI 请求模型: ' . $event->getModel()->getName());
+    error_log('AI 请求选项: ' . json_encode($event->getOptions()));
+});
+
+$dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
+    $result = $event->getDeferredResult()->getResult();
+    $metadata = $result->getMetadata();
+    error_log('Token 使用: ' . json_encode($metadata->get('token_usage')));
+});
+```
+
+**第三步：常见问题排查表**
+
+| 现象 | 可能原因 | 解决方案 |
+|------|---------|---------|
+| 响应为空字符串 | System Prompt 过长导致输出被截断 | 精简 System Prompt，或增大 `max_tokens` |
+| 响应内容不相关 | Prompt 不够明确 | 改进 System Prompt，增加示例 |
+| 抛出 ExceedContextSizeException | 消息历史过长 | 截断历史消息，保留最近 N 轮 |
+| 抛出 ContentFilterException | 输入触发平台安全过滤 | 检查用户输入内容 |
+| 工具调用死循环 | Agent 不断调用工具但无法得到满意结果 | 检查工具返回值是否有用，设置 `maxToolCalls` 限制 |
+| StructuredOutput 解析失败 | AI 返回的 JSON 不符合 DTO 结构 | 检查 DTO 的 `#[With]` 注解描述是否清晰 |
+
+### 9.2 API 费用预警
+
+大量调用 AI API 可能产生高额费用。以下是常见模型的参考价格（以 OpenAI 为例，实际价格请查看各平台官网）：
+
+| 模型 | 输入价格 (每百万 Token) | 输出价格 (每百万 Token) | 说明 |
+|------|:----------------------:|:----------------------:|------|
+| gpt-4o | ~$2.50 | ~$10.00 | 主力模型，质量最高 |
+| gpt-4o-mini | ~$0.15 | ~$0.60 | 成本极低，适合简单任务 |
+| claude-3-5-sonnet | ~$3.00 | ~$15.00 | Anthropic 主力模型 |
+| text-embedding-3-small | ~$0.02 | - | 向量化，成本很低 |
+
+**费用控制建议：**
+
+1. **开发阶段**使用 CachePlatform 避免重复请求
+2. **简单任务**使用 mini 模型（成本降低 90%+）
+3. 设置 API 平台的**月度预算上限**
+4. 使用 Token 监控（参考第 12 章事件监控）追踪消耗
+5. 在本地开发时考虑使用 **Ollama** 运行免费模型
+
+### 9.3 速率限制处理
+
+AI 平台都有速率限制。当请求过于频繁时，会收到 `RateLimitExceededException`。推荐的重试策略：
+
+```php
+use Symfony\AI\Platform\Exception\RateLimitExceededException;
+
+function invokeWithRetry(
+    PlatformInterface $platform,
+    string $model,
+    MessageBag $messages,
+    int $maxRetries = 3,
+): string {
+    $attempt = 0;
+
+    while (true) {
+        try {
+            return $platform->invoke($model, $messages)->asText();
+        } catch (RateLimitExceededException $e) {
+            $attempt++;
+            if ($attempt >= $maxRetries) {
+                throw $e;
+            }
+
+            $waitSeconds = $e->getRetryAfter() ?? (2 ** $attempt);
+            sleep($waitSeconds);
+        }
+    }
+}
+```
+
+对于生产环境，推荐使用 FailoverPlatform 配合 Symfony RateLimiter 组件，而非手动重试。
+
+### 9.4 版本兼容性
+
+Symfony AI 项目处于活跃开发阶段，API 可能在版本之间发生变化。使用时请注意：
+
+- 本手册基于 Symfony AI 0.x 版本编写
+- 每个组件有独立的版本号和 CHANGELOG
+- 升级前务必阅读项目根目录的 [UPGRADE.md](https://github.com/symfony/ai/blob/main/UPGRADE.md)
+- 在 `composer.json` 中使用约束锁定大版本号，例如 `"symfony/ai-platform": "^0.4"`
+- 关注项目的 GitHub Release 页面了解破坏性变更
+
+---
+
+## 10. 推荐学习资源
 
 | 资源 | 说明 |
 |------|------|
