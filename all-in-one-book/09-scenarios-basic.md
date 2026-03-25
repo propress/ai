@@ -163,7 +163,7 @@ try {
     echo '系统配置错误，请联系管理员。';
 } catch (RateLimitExceededException $e) {
     // 超出 API 调用限额
-    $retryAfter = $e->retryAfter;  // 可选：建议等待秒数
+    $retryAfter = $e->getRetryAfter();  // 可选：建议等待秒数
     $logger->warning('AI 限速', ['retry_after' => $retryAfter]);
     echo '服务繁忙，请稍后重试。';
 } catch (ContentFilterException $e) {
@@ -1178,8 +1178,8 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
 
 ### 7.5 结合 Chat 组件实现多轮流式对话
 
-> ⚠️ **注意**：`Chat::submit()` 返回的是 `AssistantMessage`，不是 `DeferredResult`，因此不支持流式输出。
-> 如果需要多轮对话 + 流式输出，需要自行管理消息历史并直接调用 Platform：
+> ⚠️ **注意**：`Chat::submit()` 返回的是已解析的 `AssistantMessage` 对象，不是 `DeferredResult`，因此不支持 `asStream()` 流式输出。
+> 如果需要多轮对话 + 流式输出，需要自行管理消息历史（使用 `MessageStoreInterface`）并直接调用 `Platform::invoke()` 配合 `'stream' => true`：
 
 ```php
 class MultiRoundStreamController
