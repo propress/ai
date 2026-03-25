@@ -828,7 +828,8 @@ class WeatherTool
 
 // 创建带工具的 Agent
 $toolbox = new Toolbox([new WeatherTool()]);
-$agent = new Agent($platform, 'gpt-4o', toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, 'gpt-4o', [$agentProcessor], [$agentProcessor]);
 
 // 用 Chat 包装 Agent
 $store = new Store();
@@ -1059,7 +1060,8 @@ class OrderStatusTool
 // 创建组件
 $platform = PlatformFactory::create($_ENV['OPENAI_API_KEY']);
 $toolbox = new Toolbox([new ProductSearchTool(), new OrderStatusTool()]);
-$agent = new Agent($platform, 'gpt-4o', toolbox: $toolbox);
+$agentProcessor = new AgentProcessor($toolbox);
+$agent = new Agent($platform, 'gpt-4o', [$agentProcessor], [$agentProcessor]);
 
 $cache = new FilesystemAdapter('chat', 7200);
 $store = new MessageStore($cache, 'tool_chat', 7200);

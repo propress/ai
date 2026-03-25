@@ -312,7 +312,7 @@ $response = $platform->invoke(
     'llama3.1',   // 模型名就是 ollama pull 时的名字
 );
 
-echo $response->asText();
+echo $response->getContent();
 ```
 
 ### 3.5 本地 RAG——数据零泄漏
@@ -460,7 +460,7 @@ enum ModerationAction: string
 namespace App\Service;
 
 use Symfony\AI\Platform\PlatformInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\AI\Platform\Message\Content\Image;
 
@@ -675,12 +675,11 @@ CrewAI 风格：多智能体顺序流水线
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
 use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
 use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
 
 // 1. 研究员——负责收集信息
-$researchToolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+$researchToolbox = new Toolbox([
     new TavilySearchTool($_ENV['TAVILY_API_KEY']),
     new WikipediaTool(),
 ]);
@@ -714,7 +713,7 @@ $research = $researcher->call(new MessageBag(
         .'与 LangChain（Python）和 Spring AI（Java）做简要对比。'
     ),
 ));
-echo "📋 研究报告完成（".mb_strlen($research->asText())." 字）\n";
+echo "📋 研究报告完成（".mb_strlen($research->getContent())." 字）\n";
 
 // ═════════════════════════════════════════
 // 步骤 2：写手基于研究报告撰写文章
@@ -722,9 +721,9 @@ echo "📋 研究报告完成（".mb_strlen($research->asText())." 字）\n";
 echo "✍️ 写手开始撰写...\n";
 $draft = $writer->call(new MessageBag(
     Message::forSystem('以下是研究报告，请据此撰写一篇技术博客文章：'),
-    Message::ofUser($research->asText()),
+    Message::ofUser($research->getContent()),
 ));
-echo "📄 草稿完成（".mb_strlen($draft->asText())." 字）\n";
+echo "📄 草稿完成（".mb_strlen($draft->getContent())." 字）\n";
 
 // ═════════════════════════════════════════
 // 步骤 3：编辑审核并优化
@@ -732,11 +731,11 @@ echo "📄 草稿完成（".mb_strlen($draft->asText())." 字）\n";
 echo "📝 编辑开始审核...\n";
 $final = $editor->call(new MessageBag(
     Message::forSystem('请审核并优化以下文章草稿。如有修改，输出完整的最终版本：'),
-    Message::ofUser($draft->asText()),
+    Message::ofUser($draft->getContent()),
 ));
 echo "✅ 最终版本完成\n\n";
 
-echo $final->asText();
+echo $final->getContent();
 ```
 
 ### 5.5 使用 MultiAgent 实现自动编排
@@ -765,7 +764,7 @@ $response = $multiAgent->call(new MessageBag(
 ```php
 // 如果编辑对文章不满意，可以多轮迭代
 $maxIterations = 3;
-$article = $draft->asText();
+$article = $draft->getContent();
 
 for ($i = 0; $i < $maxIterations; $i++) {
     $review = $editor->call(new MessageBag(
@@ -776,7 +775,7 @@ for ($i = 0; $i < $maxIterations; $i++) {
         Message::ofUser($article),
     ));
 
-    $reviewText = $review->asText();
+    $reviewText = $review->getContent();
 
     if (str_contains($reviewText, 'APPROVED')) {
         echo "✅ 编辑通过（第 {$i} 轮）\n";
@@ -948,7 +947,7 @@ namespace App\Controller;
 
 use Symfony\AI\Agent\AgentInterface;
 use Symfony\AI\Chat\ChatInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -991,7 +990,7 @@ class KnowledgeBaseController
             $response = $this->chat->submit($id, $question);
 
             return new JsonResponse([
-                'answer' => $response->asText(),
+                'answer' => $response->getContent(),
                 'sources' => array_map(
                     fn ($s) => ['title' => $s->getTitle(), 'url' => $s->getUrl()],
                     $response->getSources(),

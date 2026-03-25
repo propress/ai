@@ -64,7 +64,7 @@ composer require symfony/ai-platform symfony/ai-anthropic-platform
 <?php
 
 use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 1. 创建平台实例
@@ -88,7 +88,7 @@ echo $response->asText();
 对于 Web 应用，流式输出能大幅提升用户体验——首字节通常在 200ms 内返回，而非等待完整回复的 3-10 秒：
 
 ```php
-$response = $platform->invoke($messages, $model);
+$response = $platform->invoke($model, $messages);
 
 // 流式输出——逐块获取文本
 foreach ($response->asStream() as $chunk) {
@@ -155,7 +155,7 @@ use Symfony\AI\Platform\Exception\RateLimitExceededException;
 use Symfony\AI\Platform\Exception\ContentFilterException;
 
 try {
-    $response = $platform->invoke($messages, $model);
+    $response = $platform->invoke($model, $messages);
     echo $response->asText();
 } catch (AuthenticationException $e) {
     // API Key 无效或过期
@@ -285,17 +285,17 @@ $chat->initiate(new MessageBag(
 
 // 4. 第一轮对话——submit() 接收 UserMessage，返回 AssistantMessage
 $response = $chat->submit(Message::ofUser('我想退货'));
-echo $response->content;
+echo $response->getContent();
 // "好的，请提供您的订单号，我来帮您查询退货资格。"
 
 // 5. 第二轮对话——AI 自动获得之前的上下文
 $response = $chat->submit(Message::ofUser('订单号是 ORD-20240115'));
-echo $response->content;
+echo $response->getContent();
 // "已查到订单 ORD-20240115，购买于 2024-01-15，在 30 天退货期内..."
 
 // 6. 第三轮——继续追问
 $response = $chat->submit(Message::ofUser('运费谁承担？'));
-echo $response->content;
+echo $response->getContent();
 // "根据我们的退货政策，质量问题免费退货；非质量问题需承担 ¥15 运费。"
 ```
 
@@ -333,7 +333,7 @@ echo $response->content;
 namespace App\Controller;
 
 use Symfony\AI\Chat\ChatInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -426,10 +426,10 @@ $options = [                          1. 检测到 'response_format' => ProductI
                                       4. AI 返回符合 Schema 的 JSON
 $response = $platform->invoke(        5. ResultEvent 订阅器拦截结果
     $messages, $model, $options       6. 使用 Symfony Serializer 反序列化为 PHP 对象
-);                                    7. 通过 $response->unwrap() 获取对象
+);                                    7. 通过 $response->asObject() 获取对象
 
 /** @var ProductInfo $dto */
-$dto = $response->unwrap();
+$dto = $response->asObject();
 
                   JSON Schema（自动生成）
                   ══════════════════════
@@ -523,7 +523,7 @@ enum Sentiment: string
 
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Bridge\OpenAi\GPT;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 $platform = PlatformFactory::create($_ENV['OPENAI_API_KEY']);
@@ -543,7 +543,7 @@ $response = $platform->invoke(
 );
 
 /** @var ProductInfo $product */
-$product = $response->unwrap();
+$product = $response->asObject();
 
 echo $product->name;       // "华为 Mate 60 Pro"
 echo $product->price;      // 5999.0
@@ -625,7 +625,7 @@ class ProductInfo
 }
 
 // 提取后验证
-$product = $response->unwrap();
+$product = $response->asObject();
 $violations = $validator->validate($product);
 
 if (count($violations) > 0) {
@@ -670,12 +670,12 @@ foreach ($feedbacks as $feedback) {
         Message::ofUser($feedback),
     );
 
-    $response = $platform->invoke($messages, $model, [
+    $response = $platform->invoke($model, $messages, [
         'response_format' => FeedbackAnalysis::class,
         'temperature' => 0.1,  // 低 temperature 确保一致性
     ]);
 
-    $results[] = $response->unwrap();
+    $results[] = $response->asObject();
 }
 ```
 
@@ -731,7 +731,7 @@ composer require symfony/ai-platform symfony/ai-open-ai-platform
 ### 5.4 图片分析
 
 ```php
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\Content\Image;
 use Symfony\AI\Platform\Message\MessageBag;
 
@@ -795,11 +795,11 @@ class ProductImageAnalysis
     ) {}
 }
 
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'response_format' => ProductImageAnalysis::class,
 ]);
 
-$analysis = $response->unwrap();
+$analysis = $response->asObject();
 echo "主色调: {$analysis->primaryColor}";
 echo "材质: {$analysis->material}";
 ```
@@ -819,7 +819,7 @@ $messages = new MessageBag(
     ),
 );
 
-$response = $platform->invoke($messages, $model);
+$response = $platform->invoke($model, $messages);
 echo $response->asText();
 ```
 
@@ -839,15 +839,14 @@ $messages = new MessageBag(
     ),
 );
 
-$response = $platform->invoke($messages, $model);
+$response = $platform->invoke($model, $messages);
 echo $response->asText();
 ```
 
 ### 5.9 视频理解（Gemini）
 
 ```php
-use Symfony\AI\Platform\Bridge\Google\PlatformFactory;
-use Symfony\AI\Platform\Bridge\Google\Gemini;
+use Symfony\AI\Platform\Bridge\Gemini\PlatformFactory;
 use Symfony\AI\Platform\Message\Content\Video;
 
 $platform = PlatformFactory::create($_ENV['GOOGLE_API_KEY']);
@@ -925,7 +924,7 @@ echo $response->asText();
 
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
 use Symfony\AI\Platform\Bridge\OpenAi\GPT;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 $platform = PlatformFactory::create($_ENV['OPENAI_API_KEY']);
@@ -988,12 +987,12 @@ class TranslationResult
     ) {}
 }
 
-$response = $platform->invoke($messages, $model, [
+$response = $platform->invoke($model, $messages, [
     'response_format' => TranslationResult::class,
     'temperature' => 0.3,
 ]);
 
-$result = $response->unwrap();
+$result = $response->asObject();
 echo $result->translation;     // 翻译文本
 echo $result->qualityScore;    // 9
 print_r($result->notes);       // ["Agent 在此上下文中也可译为'代理']
@@ -1069,7 +1068,7 @@ $chat->submit($conversation->getId(), '第二段的语句太长了，拆成两�
 namespace App\Controller;
 
 use Symfony\AI\Platform\PlatformInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -1274,7 +1273,7 @@ function safeInvoke(
     array $options = [],
 ): string {
     try {
-        $response = $platform->invoke($messages, $model, $options);
+        $response = $platform->invoke($model, $messages, $options);
         return $response->asText();
     } catch (AuthenticationException) {
         throw new \RuntimeException('AI 服务认证失败，请检查 API Key 配置');

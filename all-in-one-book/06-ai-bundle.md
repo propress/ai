@@ -31,7 +31,7 @@
 // 手动实例化，手动管理依赖
 $httpClient = HttpClient::create();
 $platform = new OpenAiPlatform($httpClient, 'sk-...');
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [new WeatherTool()]);
+$toolbox = new Toolbox([new WeatherTool()]);
 $agentProcessor = new AgentProcessor($toolbox);
 $agent = new Agent($platform, 'gpt-4o', [$agentProcessor], [$agentProcessor]);
 $response = $agent->call(new MessageBag(Message::ofUser('天气如何？')));
@@ -1155,7 +1155,7 @@ namespace App\Controller;
 
 use Symfony\AI\Agent\AgentInterface;
 use Symfony\AI\Chat\ChatInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;

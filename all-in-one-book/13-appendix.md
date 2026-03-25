@@ -12,7 +12,7 @@
 
 ```php
 use Symfony\AI\Platform\PlatformInterface;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 创建消息
@@ -47,10 +47,9 @@ $outputTokens = $metadata->getOutputTokens();
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
 use Symfony\AI\Agent\Toolbox\AgentProcessor;
-use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
 
 // 创建 Agent（通过 AgentProcessor 连接工具箱）
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [$tool1, $tool2]);
+$toolbox = new Toolbox([$tool1, $tool2]);
 $agentProcessor = new AgentProcessor($toolbox);
 $agent = new Agent($platform, $model, [$agentProcessor], [$agentProcessor]);
 
@@ -108,7 +107,7 @@ $chat->initiate(new MessageBag(
 
 // 提交消息——submit() 接收 UserMessage，返回 AssistantMessage
 $response = $chat->submit(Message::ofUser('用户消息'));
-echo $response->content;
+echo $response->getContent();
 ```
 
 ### 1.5 MCP Bundle

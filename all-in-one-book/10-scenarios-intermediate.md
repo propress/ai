@@ -139,7 +139,7 @@ class ServerStatusTool
 
 > 📝 **知识扩展：工具参数的自动发现**
 >
-> `ReflectionToolAnalyzer` 通过 PHP 反射自动分析 `__invoke()` 方法的参数：
+> `ReflectionToolFactory` 通过 PHP 反射自动分析 `__invoke()` 方法的参数：
 > - 参数名 → 工具调用参数名（如 `$hostname`）
 > - 参数类型（`string`/`int`/`float`/`bool`/`array`）→ JSON Schema 类型
 > - PHPDoc `@param` 注释 → 参数描述（告诉 AI 这个参数应该填什么）
@@ -154,18 +154,16 @@ class ServerStatusTool
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
-use Symfony\AI\Platform\Bridge\Google\PlatformFactory;
-use Symfony\AI\Platform\Bridge\Google\Gemini;
-use Symfony\AI\Platform\Message;
+use Symfony\AI\Platform\Bridge\Gemini\PlatformFactory;
+use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 1. 创建平台
 $platform = PlatformFactory::create($_ENV['GOOGLE_API_KEY']);
-$model = new Gemini(Gemini::GEMINI_2_FLASH);
+$model = 'gemini-2.5-flash';
 
 // 2. 创建工具箱
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+$toolbox = new Toolbox([
     new ServerStatusTool($monitoringClient),
     new \Symfony\AI\Agent\Bridge\Clock\Clock(),
 ]);
@@ -180,7 +178,7 @@ $response = $agent->call(new MessageBag(
     Message::ofUser('web-01 服务器现在状态怎么样？'),
 ));
 
-echo $response->asText();
+echo $response->getContent();
 // AI 自动调用 get_server_status("web-01")，然后基于结果回答：
 // "web-01 服务器运行正常：CPU 45%，内存 62%，磁盘 78%，已运行 15 天。
 //  各项指标在健康范围内，无需担心。"
@@ -435,13 +433,12 @@ echo sprintf("已索引 %d 个文档块\n", count($chunks));
 use Symfony\AI\Store\Retriever\SimilaritySearchRetriever;
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
 
 // 1. 创建检索器
 $retriever = new SimilaritySearchRetriever($store, $vectorizer);
 
 // 2. 作为工具集成到 Agent
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+$toolbox = new Toolbox([
     $retriever,  // 自动注册为 similarity_search 工具
 ]);
 
@@ -461,7 +458,7 @@ $response = $agent->call(new MessageBag(
     Message::ofUser('我们的退货政策是什么？'),
 ));
 
-echo $response->asText();
+echo $response->getContent();
 // "根据公司退货政策文档：
 //  1. 购买后 30 天内可以申请退货
 //  2. 商品需保留原包装
@@ -661,7 +658,7 @@ $response = $multiAgent->call(new MessageBag(
     Message::ofUser('我调用 API 时一直返回 500 错误，怎么办？'),
 ));
 
-echo $response->asText();
+echo $response->getContent();
 // 自动路由到 technical Agent，给出详细的技术排查步骤
 
 // 另一个问题
@@ -746,12 +743,11 @@ composer require symfony/ai-platform symfony/ai-anthropic-platform \
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Toolbox\Tool\ReflectionToolAnalyzer;
 use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
 use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
 
 // 创建搜索工具箱
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+$toolbox = new Toolbox([
     new TavilySearchTool($_ENV['TAVILY_API_KEY']),
     new WikipediaTool(),
 ]);
@@ -772,7 +768,7 @@ $response = $agent->call(new MessageBag(
     Message::ofUser('帮我调研一下 2024 年 PHP 框架的市场份额和发展趋势'),
 ));
 
-echo $response->asText();
+echo $response->getContent();
 ```
 
 ### 5.5 来源追踪
@@ -802,7 +798,7 @@ foreach ($sources as $source) {
 
 ```php
 // 组合多种搜索工具——AI 自动选择最合适的
-$toolbox = new Toolbox(new ReflectionToolAnalyzer(), [
+$toolbox = new Toolbox([
     new TavilySearchTool($_ENV['TAVILY_API_KEY']),   // 通用 Web 搜索
     new WikipediaTool(),                              // 知识/概念查询
     new FirecrawlTool($_ENV['FIRECRAWL_API_KEY']),   // 深度页面爬取
@@ -909,7 +905,7 @@ $response = $agent->call(new MessageBag(
 // AI 基于记忆生成 PHP 8.4 + Symfony + PostgreSQL 风格的代码
 // 代码会很简洁（因为用户不喜欢过多注释）
 // 使用 PSR-12 规范
-echo $response->asText();
+echo $response->getContent();
 ```
 
 ### 6.5 动态记忆——向量化记忆
@@ -945,7 +941,7 @@ $response = $agent->call(new MessageBag(
 
 // AI 的回答会针对性地解决 Doctrine N+1 问题
 // 并建议使用 Redis 缓存查询结果
-echo $response->asText();
+echo $response->getContent();
 ```
 
 ### 6.6 禁用记忆

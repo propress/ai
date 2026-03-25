@@ -309,7 +309,7 @@ try {
 } catch (ExceedContextSizeException $e) {
     // 输入过长：截断消息历史后重试
     $truncatedMessages = $this->truncateMessages($messages, maxRounds: 5);
-    return $agent->call($truncatedMessages)->asText();
+    return $agent->call($truncatedMessages)->getContent();
 
 } catch (ContentFilterException $e) {
     // 用户输入触发安全过滤
@@ -794,7 +794,7 @@ class AgentIntegrationTest extends TestCase
 
         // Agent 会收到 mock 的工具结果
         $response = $agent->call($messages);
-        $this->assertStringContainsString('healthy', $response->asText());
+        $this->assertStringContainsString('healthy', $response->getContent());
     }
 }
 ```
