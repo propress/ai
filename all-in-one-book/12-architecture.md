@@ -502,7 +502,7 @@ use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 // ❌ 需要最新信息的查询
 // ❌ 个性化回答（每次都不同）
 
-$platform = new CachePlatform($innerPlatform, $cache);
+$platform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 注意：必须提供 prompt_cache_key
 $response = $platform->invoke($model, $messages, [
@@ -865,7 +865,7 @@ $model = match ($taskComplexity) {
 };
 
 // 策略 2：缓存高频请求
-$platform = new CachePlatform($innerPlatform, $cache);
+$platform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 策略 3：预算告警
 if ($this->getMonthlySpend() > $this->getBudget() * 0.8) {

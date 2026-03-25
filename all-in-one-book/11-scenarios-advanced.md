@@ -89,8 +89,8 @@ use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory as AnthropicFactory;
 $openai = OpenAiFactory::create($_ENV['OPENAI_API_KEY']);
 $anthropic = AnthropicFactory::create($_ENV['ANTHROPIC_API_KEY']);
 
-// 创建容灾平台——接受平台数组，按顺序尝试
-$platform = new FailoverPlatform([$openai, $anthropic]);
+// 创建容灾平台——接受平台数组和速率限制器，按顺序尝试
+$platform = new FailoverPlatform([$openai, $anthropic], $rateLimiterFactory);
 
 // 使用方式与单平台完全一致
 $response = $platform->invoke($model, $messages);
@@ -141,12 +141,13 @@ $response = $platform->invoke($model, $messages);
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
-$cache = new RedisAdapter(/* Redis 连接 */);
+$cache = new TagAwareAdapter(new RedisAdapter(/* Redis 连接 */));
 
 $platform = new CachePlatform(
-    $innerPlatform,
-    $cache,
+    platform: $innerPlatform,
+    cache: $cache,
 );
 
 // 缓存调用——必须提供 prompt_cache_key
@@ -195,10 +196,10 @@ $openai = OpenAiFactory::create($_ENV['OPENAI_API_KEY']);
 $anthropic = AnthropicFactory::create($_ENV['ANTHROPIC_API_KEY']);
 
 // 第 2 步：容灾平台
-$failover = new FailoverPlatform([$openai, $anthropic]);
+$failover = new FailoverPlatform([$openai, $anthropic], $rateLimiterFactory);
 
 // 第 3 步：缓存平台（包装容灾平台）
-$platform = new CachePlatform($failover, $cache);
+$platform = new CachePlatform($failover, cache: $cache);
 
 // 请求的完整路径：
 // 1. CachePlatform 检查缓存 → 命中则直接返回（0 成本、<1ms）
@@ -355,10 +356,13 @@ $platform = $this->isSensitiveData($input) ? $localPlatform : $cloudPlatform;
 
 // 策略 2：使用 FailoverPlatform，云端优先、本地兜底
 // 好处：即使云端 API 故障，服务也不中断
-$platform = new FailoverPlatform([
-    $cloudPlatform,    // 优先：质量好
-    $localPlatform,    // 兜底：永远可用（本地服务器不会宕机）
-]);
+$platform = new FailoverPlatform(
+    platforms: [
+        $cloudPlatform,    // 优先：质量好
+        $localPlatform,    // 兜底：永远可用（本地服务器不会宕机）
+    ],
+    rateLimiterFactory: $rateLimiterFactory,
+);
 ```
 
 ### 3.7 本地模型选型指南
@@ -555,7 +559,7 @@ PROMPT;
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 
-$cachedPlatform = new CachePlatform($innerPlatform, $cache);
+$cachedPlatform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 自定义缓存键——基于内容哈希
 $moderator = new ContentModerationService($cachedPlatform);
