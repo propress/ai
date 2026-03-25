@@ -1,29 +1,29 @@
-# 第 4 章：Store 组件 —— 向量数据库与 RAG
+# 4 Store —— RAG
 
-## 🎯 本章学习目标
+## 
 
-掌握 Store 组件的完整架构：文档加载与转换、向量化与索引流水线、25+ 存储后端、向量/全文/混合查询、检索器与重排序、事件系统，学会构建端到端的 RAG（检索增强生成）应用。
-
----
-
-## 1. 回顾
-
-在 [第 3 章：Agent 组件](03-agent.md) 中，我们掌握了 Agent 的核心能力：
-
-- **工具调用循环**：Agent 通过 LLM → 工具调用 → 反馈结果 → 再次调用的闭环机制执行实际任务
-- **Toolbox 工具系统**：通过 `#[AsTool]` 注解将 PHP 方法注册为 AI 可调用的工具
-- **处理器管线**：`InputProcessor` 和 `OutputProcessor` 在调用前后拦截和增强消息
-- **多 Agent 编排**：通过 `AgentTool` 实现多个专业 Agent 的路由与协作
-
-Agent 解决了「如何让 AI 执行操作」的问题。但 AI 的训练数据有截止日期，无法回答关于**你的私有数据**的问题——你的产品文档、内部知识库、业务数据。这就引出了本章的核心主题：**如何让 AI 基于你的数据回答问题？**
+ Store 25+ // RAG
 
 ---
 
-## 2. 向量数据库与 RAG 入门
+## 1. 
 
-### 2.1 什么是向量嵌入（Vector Embedding）？
+ [ 3 Agent ](03-agent.md) Agent 
 
-向量嵌入是 AI 模型对文本语义的数学表示。简单来说，就是把一段文本转换为一组浮点数（向量），使得**语义相近的文本在向量空间中距离也近**：
+- ****Agent LLM → → → 
+- **Toolbox ** `#[AsTool]` PHP AI 
+- ****`InputProcessor` `OutputProcessor` 
+- ** Agent ** `AgentTool` Agent 
+
+Agent AI AI ****——** AI **
+
+---
+
+## 2. RAG 
+
+### 2.1 Vector Embedding
+
+ AI ****
 
 ```
 "如何退款？"    → [0.12, -0.34, 0.56, ..., 0.78]  (1536 维)
@@ -31,11 +31,11 @@ Agent 解决了「如何让 AI 执行操作」的问题。但 AI 的训练数据
 "今天天气如何？"  → [0.89, 0.23, -0.41, ..., 0.15]  (距离很远)
 ```
 
-向量化由**嵌入模型（Embedding Model）**完成，如 OpenAI 的 `text-embedding-3-small`（输出 1536 维向量）。
+**Embedding Model** OpenAI `text-embedding-3-small` 1536 
 
-### 2.2 什么是 RAG（检索增强生成）？
+### 2.2 RAG
 
-RAG（Retrieval-Augmented Generation）是一种让 AI 基于外部知识回答问题的架构模式。核心思路是：先从知识库中**检索**相关文档，再将文档作为上下文送给 LLM **生成**回答。
+RAGRetrieval-Augmented Generation AI **** LLM ****
 
 ```mermaid
 flowchart LR
@@ -50,17 +50,17 @@ flowchart LR
     style F fill:#e8f5e9
 ```
 
-与直接让 AI 回答相比，RAG 有三大优势：
+ AI RAG 
 
-| | 直接问 LLM | RAG 模式 |
+| | LLM | RAG |
 |---|---|---|
-| **知识来源** | 训练数据（有截止日期） | 你的实时文档 |
-| **准确性** | 可能产生幻觉 | 基于真实文档，可追溯来源 |
-| **私有数据** | 无法访问 | 可以检索企业内部知识 |
+| **** | | |
+| **** | | |
+| **** | | |
 
-### 2.3 Store 组件在架构中的位置
+### 2.3 Store 
 
-Store 组件是 Symfony AI 的 **RAG 引擎**，提供了从文档到向量再到检索的完整流水线：
+Store Symfony AI **RAG **
 
 ```mermaid
 flowchart TB
@@ -83,17 +83,17 @@ flowchart TB
     style A fill:#e8f5e9
 ```
 
-> 💡 Store 组件同时服务于**索引阶段**和**查询阶段**。索引阶段通常是离线批处理任务，查询阶段则是每次用户提问时实时执行。
+> Store ********
 
 ---
 
-## 3. 文档系统
+## 3. 
 
-Store 组件的文档系统围绕三个核心类展开：`TextDocument`（原始文档）、`VectorDocument`（向量文档）、`Metadata`（元数据）。
+Store `TextDocument``VectorDocument``Metadata`
 
-### 3.1 TextDocument：原始文本文档
+### 3.1 TextDocument
 
-`TextDocument` 是索引流水线的**输入**，表示一个尚未向量化的文本文档：
+`TextDocument` ****
 
 ```php
 use Symfony\AI\Store\Document\TextDocument;
@@ -116,9 +116,9 @@ echo $document->getContent(); // '退款政策：购买后 14 天内可申请全
 $updated = $document->withContent('更新后的退款政策...');
 ```
 
-### 3.2 VectorDocument：向量文档
+### 3.2 VectorDocument
 
-`VectorDocument` 是实际存入向量数据库的数据结构，包含嵌入向量和相似度得分：
+`VectorDocument` 
 
 ```php
 use Symfony\AI\Store\Document\VectorDocument;
@@ -137,11 +137,11 @@ $scored = $vectorDoc->withScore(0.95);
 echo $scored->getScore(); // 0.95
 ```
 
-> 📌 文档生命周期：`TextDocument`（原始文本）→ 经过 `Vectorizer` → `VectorDocument`（带向量）→ 存入 `Store` → 查询返回带 `score` 的 `VectorDocument`。
+> `TextDocument`→ `Vectorizer` → `VectorDocument`→ `Store` → `score` `VectorDocument`
 
-### 3.3 Metadata：元数据
+### 3.3 Metadata
 
-`Metadata` 继承自 `\ArrayObject`，支持任意键值对，同时定义了一组内置的保留键：
+`Metadata` `\ArrayObject`
 
 ```php
 use Symfony\AI\Store\Document\Metadata;
@@ -166,22 +166,22 @@ $metadata['department'] = 'HR';
 $metadata['year'] = 2024;
 ```
 
-| 内置键 | 常量 | 说明 |
+| | | |
 |--------|------|------|
-| `_text` | `Metadata::KEY_TEXT` | 原始文本，`Vectorizer` 自动填充 |
-| `_source` | `Metadata::KEY_SOURCE` | 文档来源（文件路径 / URL） |
-| `_title` | `Metadata::KEY_TITLE` | 文档标题 |
-| `_summary` | `Metadata::KEY_SUMMARY` | AI 生成的摘要 |
-| `_parent_id` | `Metadata::KEY_PARENT_ID` | 分块后关联原文档 ID |
-| `_depth` | `Metadata::KEY_DEPTH` | 在文档树中的嵌套深度 |
+| `_text` | `Metadata::KEY_TEXT` | `Vectorizer` |
+| `_source` | `Metadata::KEY_SOURCE` | / URL |
+| `_title` | `Metadata::KEY_TITLE` | |
+| `_summary` | `Metadata::KEY_SUMMARY` | AI |
+| `_parent_id` | `Metadata::KEY_PARENT_ID` | ID |
+| `_depth` | `Metadata::KEY_DEPTH` | |
 
-> 💡 `Metadata::KEY_TEXT` 尤其重要——`Vectorizer` 会自动将原始文本保存到该字段，这是后续 `Reranker` 重排序和检索结果展示的基础。
+> `Metadata::KEY_TEXT` ——`Vectorizer` `Reranker` 
 
 ---
 
-## 4. 文档加载器（Loaders）
+## 4. Loaders
 
-文档加载器负责从各种数据源读取文档，返回 `TextDocument` 的可迭代集合。
+ `TextDocument` 
 
 ### 4.1 LoaderInterface
 
@@ -197,18 +197,18 @@ interface LoaderInterface
 }
 ```
 
-### 4.2 内置加载器一览
+### 4.2 
 
-| 加载器 | 数据源 | 输出 | 典型用途 |
+| | | | |
 |--------|--------|------|----------|
-| `TextFileLoader` | 纯文本文件 | 1 个 TextDocument / 文件 | 日志、配置文件 |
-| `MarkdownLoader` | Markdown 文件 | 1 个 TextDocument / 文件 | 技术文档、README |
-| `CsvLoader` | CSV 文件 | 每行 1 个 TextDocument | 产品目录、FAQ |
-| `JsonFileLoader` | JSON 文件 | 每条记录 1 个 TextDocument | API 数据、配置 |
-| `RssFeedLoader` | RSS/Atom URL | 每篇文章 1 个 TextDocument | 新闻、博客 |
-| `RstLoader` | RST 文件 | 1 个 TextDocument / 文件 | Sphinx 文档 |
-| `RstToctreeLoader` | RST 目录树 | 递归加载所有文档 | Sphinx 文档树 |
-| `InMemoryLoader` | 内存中的文档 | 传入的文档集合 | 测试、动态内容 |
+| `TextFileLoader` | | 1 TextDocument / | |
+| `MarkdownLoader` | Markdown | 1 TextDocument / | README |
+| `CsvLoader` | CSV | 1 TextDocument | FAQ |
+| `JsonFileLoader` | JSON | 1 TextDocument | API |
+| `RssFeedLoader` | RSS/Atom URL | 1 TextDocument | |
+| `RstLoader` | RST | 1 TextDocument / | Sphinx |
+| `RstToctreeLoader` | RST | | Sphinx |
+| `InMemoryLoader` | | | |
 
 ### 4.3 MarkdownLoader
 
@@ -280,7 +280,7 @@ foreach ($loader->load('https://example.com/feed.rss') as $document) {
 
 ### 4.7 InMemoryLoader
 
-适合测试或动态生成的文档场景：
+
 
 ```php
 use Symfony\AI\Store\Document\Loader\InMemoryLoader;
@@ -298,7 +298,7 @@ foreach ($loader->load() as $document) {
 }
 ```
 
-### 4.8 实战：加载整个知识库目录
+### 4.8 
 
 ```php
 use Symfony\AI\Store\Document\Loader\MarkdownLoader;
@@ -318,9 +318,9 @@ echo count($allDocuments) . ' 篇文档已加载';
 
 ---
 
-## 5. 文档转换器（Transformers）
+## 5. Transformers
 
-加载后的文档通常需要经过转换处理——分块、清洗、生成摘要等——才能有效地向量化和检索。
+————
 
 ### 5.1 TransformerInterface
 
@@ -337,9 +337,9 @@ interface TransformerInterface
 }
 ```
 
-### 5.2 TextSplitTransformer：文本分块
+### 5.2 TextSplitTransformer
 
-这是 RAG 应用中最重要的转换器。将长文档切分为带重叠的小块，确保每块在嵌入模型的最佳处理长度内：
+ RAG 
 
 ```php
 use Symfony\AI\Store\Document\Transformer\TextSplitTransformer;
@@ -357,7 +357,7 @@ foreach ($chunks as $chunk) {
 }
 ```
 
-**重叠（overlap）** 的作用是防止关键信息被切割在块边界：
+**overlap** 
 
 ```
 原始文档（2600 字符）:
@@ -372,7 +372,7 @@ chunkSize=1000, overlap=200:
                 ↑ 重叠区 ↑
 ```
 
-运行时也可以通过 `$options` 覆盖默认参数：
+ `$options` 
 
 ```php
 $chunks = $splitter->transform($documents, [
@@ -381,18 +381,18 @@ $chunks = $splitter->transform($documents, [
 ]);
 ```
 
-> ⚠️ **分块策略对 RAG 效果影响巨大**：
+> ** RAG **
 
-| chunkSize | overlap | 效果 | 适用场景 |
+| chunkSize | overlap | | |
 |-----------|---------|------|----------|
-| 256 | 32 | 粒度细，精确定位短句 | 短问答、代码注释 |
-| 500 | 50 | 段落级检索 | FAQ、Wiki |
-| 1000 | 200 | 保留更多上下文（推荐默认） | 技术文档、长文 |
-| 2000 | 400 | 粗粒度，适合概念性搜索 | 摘要生成 |
+| 256 | 32 | | |
+| 500 | 50 | | FAQWiki |
+| 1000 | 200 | | |
+| 2000 | 400 | | |
 
-### 5.3 SummaryGeneratorTransformer：AI 摘要
+### 5.3 SummaryGeneratorTransformerAI 
 
-使用 LLM 为每篇文档生成摘要，并存入元数据的 `_summary` 字段。开启 `yieldSummaryDocuments` 时，还会额外生成独立的摘要文档（双重索引模式）：
+ LLM `_summary` `yieldSummaryDocuments` 
 
 ```php
 use Symfony\AI\Store\Document\Transformer\SummaryGeneratorTransformer;
@@ -409,9 +409,9 @@ foreach ($summarizer->transform($documents) as $doc) {
 }
 ```
 
-> 💡 **双重索引（Dual Indexing）策略**：同时存储原文块向量和摘要向量。查询时摘要向量更聚焦于主题，命中率更高；通过 `_parent_id` 可以追溯回完整原文。
+> **Dual Indexing** `_parent_id` 
 
-### 5.4 其他内置转换器
+### 5.4 
 
 ```php
 use Symfony\AI\Store\Document\Transformer\TextTrimTransformer;
@@ -431,9 +431,9 @@ $replacer = new TextReplaceTransformer(
 $delayer = new ChunkDelayTransformer(delayMs: 1000);
 ```
 
-### 5.5 ChainTransformer：组合多个转换器
+### 5.5 ChainTransformer
 
-将多个转换器串联成管线：
+
 
 ```php
 use Symfony\AI\Store\Document\Transformer\ChainTransformer;
@@ -450,15 +450,15 @@ $transformer = new ChainTransformer(
 $processedDocs = $transformer->transform($rawDocuments);
 ```
 
-> 📌 转换器的执行顺序很重要：先清洗再分块，避免脏数据影响分块效果。
+> 
 
 ---
 
-## 6. 向量化（Vectorization）
+## 6. Vectorization
 
-### 6.1 VectorizerInterface 与 Vectorizer
+### 6.1 VectorizerInterface Vectorizer
 
-`Vectorizer` 通过 Platform 组件调用嵌入模型，将文本或文档转换为向量：
+`Vectorizer` Platform 
 
 ```php
 use Symfony\AI\Store\Document\Vectorizer;
@@ -470,7 +470,7 @@ $vectorizer = new Vectorizer(
 );
 ```
 
-`vectorize()` 方法支持多种输入类型：
+`vectorize()` 
 
 ```php
 // 1. 单个字符串 → Vector
@@ -488,19 +488,19 @@ $vectors = $vectorizer->vectorize(['文本一', '文本二', '文本三']);
 $vectorDocs = $vectorizer->vectorize([$doc1, $doc2, $doc3]);
 ```
 
-> 💡 `Vectorizer` 会自动检测嵌入模型是否支持批量输入（`Capability::INPUT_MULTIPLE`）。支持批量的模型（如 OpenAI text-embedding 系列）会一次 API 调用处理整批文档，大幅降低延迟和成本。
+> `Vectorizer` `Capability::INPUT_MULTIPLE` OpenAI text-embedding API 
 
-### 6.2 常用嵌入模型对比
+### 6.2 
 
-| 模型 | 提供商 | 维度 | 每文档存储 | 适用场景 |
+| | | | | |
 |------|--------|------|-----------|----------|
-| `text-embedding-3-small` | OpenAI | 1536 | ~6KB | 通用 RAG（推荐） |
-| `text-embedding-3-large` | OpenAI | 3072 | ~12KB | 高精度检索 |
-| `text-embedding-ada-002` | OpenAI | 1536 | ~6KB | 旧版，兼容用途 |
-| `nomic-embed-text` | Ollama | 768 | ~3KB | 本地部署 |
-| `mxbai-embed-large` | Ollama | 1024 | ~4KB | 本地高精度 |
+| `text-embedding-3-small` | OpenAI | 1536 | ~6KB | RAG |
+| `text-embedding-3-large` | OpenAI | 3072 | ~12KB | |
+| `text-embedding-ada-002` | OpenAI | 1536 | ~6KB | |
+| `nomic-embed-text` | Ollama | 768 | ~3KB | |
+| `mxbai-embed-large` | Ollama | 1024 | ~4KB | |
 
-### 6.3 示例：向量化文档
+### 6.3 
 
 ```php
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
@@ -522,13 +522,13 @@ echo '原始文本：' . $vectorDoc->getMetadata()->getText() . "\n";     // 自
 
 ---
 
-## 7. 索引器（Indexer）
+## 7. Indexer
 
-索引器是文档处理流水线的入口，将文档从加载到存储的完整流程自动化。
 
-### 7.1 DocumentProcessor：核心管线编排器
 
-`DocumentProcessor` 负责 **过滤 → 转换 → 向量化 → 存储** 的完整链路：
+### 7.1 DocumentProcessor
+
+`DocumentProcessor` ** → → → ** 
 
 ```php
 use Symfony\AI\Store\Indexer\DocumentProcessor;
@@ -567,9 +567,9 @@ flowchart LR
     style E fill:#e8f5e9
 ```
 
-### 7.2 SourceIndexer：从文件路径索引
+### 7.2 SourceIndexer
 
-`SourceIndexer` 接受文件路径或 URL，先通过 Loader 加载文档，再交给 `DocumentProcessor` 处理：
+`SourceIndexer` URL Loader `DocumentProcessor` 
 
 ```php
 use Symfony\AI\Store\Indexer\SourceIndexer;
@@ -591,9 +591,9 @@ $indexer->index([
 ]);
 ```
 
-### 7.3 DocumentIndexer：直接索引文档对象
+### 7.3 DocumentIndexer
 
-当你已经有了 `TextDocument` 对象（比如从数据库查询），可以跳过 Loader 直接索引：
+ `TextDocument` Loader 
 
 ```php
 use Symfony\AI\Store\Indexer\DocumentIndexer;
@@ -607,9 +607,9 @@ $indexer->index($textDocument);
 $indexer->index([$doc1, $doc2, $doc3]);
 ```
 
-### 7.4 ConfiguredSourceIndexer：预配置默认来源
+### 7.4 ConfiguredSourceIndexer
 
-使用装饰器模式，允许在 Symfony 容器中预配置默认文档来源：
+ Symfony 
 
 ```php
 use Symfony\AI\Store\Indexer\ConfiguredSourceIndexer;
@@ -626,7 +626,7 @@ $indexer->index();
 $indexer->index('/var/other-docs/');
 ```
 
-### 7.5 完整索引工作流示例
+### 7.5 
 
 ```php
 use Symfony\AI\Platform\Bridge\OpenAi\PlatformFactory;
@@ -675,9 +675,9 @@ echo "索引完成！\n";
 
 ---
 
-## 8. 存储后端
+## 8. 
 
-### 8.1 StoreInterface：核心存储接口
+### 8.1 StoreInterface
 
 ```php
 namespace Symfony\AI\Store;
@@ -707,9 +707,9 @@ interface StoreInterface
 }
 ```
 
-### 8.2 ManagedStoreInterface：基础设施管理
+### 8.2 ManagedStoreInterface
 
-大多数存储后端还实现了 `ManagedStoreInterface`，支持创建和销毁底层基础设施：
+ `ManagedStoreInterface`
 
 ```php
 interface ManagedStoreInterface
@@ -719,7 +719,7 @@ interface ManagedStoreInterface
 }
 ```
 
-对应的 CLI 命令：
+ CLI 
 
 ```bash
 # 初始化存储（创建表/索引）
@@ -729,59 +729,59 @@ php bin/console ai:store:setup
 php bin/console ai:store:drop
 ```
 
-### 8.3 25+ 存储后端一览
+### 8.3 25+ 
 
-Store 组件提供了覆盖主流向量数据库和搜索引擎的桥接器：
+Store 
 
-#### 云服务
+#### 
 
-| 后端 | 包名 | 特点 |
+| | | |
 |------|------|------|
-| **Pinecone** | `symfony/ai-pinecone-store` | 全托管，零运维，自动扩展 |
-| **Qdrant Cloud** | `symfony/ai-qdrant-store` | 高性能向量搜索，支持云端和自托管 |
-| **Weaviate** | `symfony/ai-weaviate-store` | 多模态支持，GraphQL 查询 |
-| **Milvus** | `symfony/ai-milvus-store` | 千亿级向量，GPU 加速 |
-| **Supabase** | `symfony/ai-supabase-store` | 基于 PostgreSQL + pgvector 的 REST API |
-| **Azure AI Search** | `symfony/ai-azure-search-store` | Azure 生态集成 |
-| **S3Vectors** | `symfony/ai-s3-vectors-store` | AWS S3 向量存储，成本极低 |
-| **Cloudflare** | `symfony/ai-cloudflare-store` | 边缘计算向量存储 |
+| **Pinecone** | `symfony/ai-pinecone-store` | |
+| **Qdrant Cloud** | `symfony/ai-qdrant-store` | |
+| **Weaviate** | `symfony/ai-weaviate-store` | GraphQL |
+| **Milvus** | `symfony/ai-milvus-store` | GPU |
+| **Supabase** | `symfony/ai-supabase-store` | PostgreSQL + pgvector REST API |
+| **Azure AI Search** | `symfony/ai-azure-search-store` | Azure |
+| **S3Vectors** | `symfony/ai-s3-vectors-store` | AWS S3 |
+| **Cloudflare** | `symfony/ai-cloudflare-store` | |
 
-#### 自托管
+#### 
 
-| 后端 | 包名 | 特点 |
+| | | |
 |------|------|------|
-| **PostgreSQL** | `symfony/ai-postgres-store` | pgvector 扩展，原生混合查询，ACID 事务 |
-| **Redis** | `symfony/ai-redis-store` | 超低延迟，RedisSearch 模块 |
-| **Elasticsearch** | `symfony/ai-elasticsearch-store` | 企业级，kNN 搜索 |
-| **OpenSearch** | `symfony/ai-opensearch-store` | Elasticsearch 开源分支 |
-| **ChromaDB** | `symfony/ai-chroma-db-store` | 轻量级，Python 生态流行 |
+| **PostgreSQL** | `symfony/ai-postgres-store` | pgvector ACID |
+| **Redis** | `symfony/ai-redis-store` | RedisSearch |
+| **Elasticsearch** | `symfony/ai-elasticsearch-store` | kNN |
+| **OpenSearch** | `symfony/ai-opensearch-store` | Elasticsearch |
+| **ChromaDB** | `symfony/ai-chroma-db-store` | Python |
 | **MongoDB** | `symfony/ai-mongodb-store` | Atlas Vector Search |
-| **Neo4j** | `symfony/ai-neo4j-store` | 图数据库 + 向量搜索 |
-| **MariaDB** | `symfony/ai-mariadb-store` | 内置向量功能 |
-| **SQLite** | `symfony/ai-sqlite-store` | sqlite-vec 扩展，零配置 |
-| **ClickHouse** | `symfony/ai-clickhouse-store` | 列式存储，大规模数据 |
-| **SurrealDB** | `symfony/ai-surrealdb-store` | 多模型数据库 |
+| **Neo4j** | `symfony/ai-neo4j-store` | + |
+| **MariaDB** | `symfony/ai-mariadb-store` | |
+| **SQLite** | `symfony/ai-sqlite-store` | sqlite-vec |
+| **ClickHouse** | `symfony/ai-clickhouse-store` | |
+| **SurrealDB** | `symfony/ai-surrealdb-store` | |
 
-#### 搜索引擎
+#### 
 
-| 后端 | 包名 | 特点 |
+| | | |
 |------|------|------|
-| **Meilisearch** | `symfony/ai-meilisearch-store` | 向量 + 全文搜索 |
-| **Typesense** | `symfony/ai-typesense-store` | 快速搜索引擎 |
-| **ManticoreSearch** | `symfony/ai-manticore-search-store` | 全文搜索引擎 |
+| **Meilisearch** | `symfony/ai-meilisearch-store` | + |
+| **Typesense** | `symfony/ai-typesense-store` | |
+| **ManticoreSearch** | `symfony/ai-manticore-search-store` | |
 
-#### 工具类
+#### 
 
-| 后端 | 包名 | 特点 |
+| | | |
 |------|------|------|
-| **InMemory** | 内置（无需安装） | 零依赖，适合测试和原型 |
-| **Cache** | `symfony/ai-cache-store` | 基于 PSR-6 缓存池，支持 TTL |
-| **CombinedStore** | 内置（无需安装） | 组合多个后端，RRF 融合 |
-| **Vektor** | `symfony/ai-vektor-store` | 轻量向量数据库 |
+| **InMemory** | | |
+| **Cache** | `symfony/ai-cache-store` | PSR-6 TTL |
+| **CombinedStore** | | RRF |
+| **Vektor** | `symfony/ai-vektor-store` | |
 
-### 8.4 查询类型支持矩阵
+### 8.4 
 
-| 存储后端 | VectorQuery | TextQuery | HybridQuery | ManagedStore |
+| | VectorQuery | TextQuery | HybridQuery | ManagedStore |
 |----------|:-----------:|:---------:|:-----------:|:------------:|
 | **InMemory** | ✅ | ✅ | ✅ | ✅ |
 | **PostgreSQL** | ✅ | ✅ | ✅ | ✅ |
@@ -807,13 +807,13 @@ Store 组件提供了覆盖主流向量数据库和搜索引擎的桥接器：
 | **SurrealDB** | ✅ | ❌ | ❌ | ✅ |
 | **ClickHouse** | ✅ | ❌ | ❌ | ✅ |
 | **Supabase** | ✅ | ❌ | ❌ | ❌ |
-| **CombinedStore** | ✅ | ✅ | ✅（RRF） | ❌ |
+| **CombinedStore** | ✅ | ✅ | ✅RRF | ❌ |
 
-> 💡 不支持 `HybridQuery` 的后端，可以通过 `CombinedStore` 组合一个向量后端和一个文本后端来实现混合搜索。
+> `HybridQuery` `CombinedStore` 
 
-### 8.5 PostgreSQL（pgvector）安装与配置
+### 8.5 PostgreSQLpgvector
 
-PostgreSQL 是最推荐的生产环境后端，原生支持三种查询类型：
+PostgreSQL 
 
 ```bash
 # 安装
@@ -848,7 +848,7 @@ $store->setup([
 ]);
 ```
 
-### 8.6 其他常用后端配置示例
+### 8.6 
 
 #### Qdrant
 
@@ -864,7 +864,7 @@ $store = new Store(
 $store->setup();
 ```
 
-#### Redis（RedisSearch）
+#### RedisRedisSearch
 
 ```php
 use Symfony\AI\Store\Bridge\Redis\Store;
@@ -879,7 +879,7 @@ $store = new Store(
 $store->setup(['vector_size' => 1536, 'index_method' => 'HNSW']);
 ```
 
-#### InMemory（开发/测试）
+#### InMemory/
 
 ```php
 use Symfony\AI\Store\InMemory\Store;
@@ -890,7 +890,7 @@ $store = new Store(
 );
 ```
 
-#### CombinedStore（组合多后端）
+#### CombinedStore
 
 ```php
 use Symfony\AI\Store\CombinedStore;
@@ -913,7 +913,7 @@ $results = $combined->query(
 );
 ```
 
-### 8.7 选型决策树
+### 8.7 
 
 ```mermaid
 flowchart TD
@@ -934,11 +934,11 @@ flowchart TD
 
 ---
 
-## 9. 查询系统
+## 9. 
 
 ### 9.1 QueryInterface
 
-所有查询类型都实现标记接口 `QueryInterface`：
+ `QueryInterface`
 
 ```php
 namespace Symfony\AI\Store\Query;
@@ -946,9 +946,9 @@ namespace Symfony\AI\Store\Query;
 interface QueryInterface {}
 ```
 
-### 9.2 VectorQuery：向量相似度搜索
+### 9.2 VectorQuery
 
-经典的语义搜索，通过向量距离找到语义最接近的文档：
+
 
 ```php
 use Symfony\AI\Store\Query\VectorQuery;
@@ -966,9 +966,9 @@ foreach ($results as $doc) {
 }
 ```
 
-### 9.3 TextQuery：全文关键词搜索
+### 9.3 TextQuery
 
-精确匹配关键词，不经过向量化：
+
 
 ```php
 use Symfony\AI\Store\Query\TextQuery;
@@ -982,9 +982,9 @@ $query = new TextQuery(['退款', '政策', 'refund']);
 $results = $store->query($query, ['limit' => 10]);
 ```
 
-### 9.4 HybridQuery：混合搜索
+### 9.4 HybridQuery
 
-结合语义搜索和关键词搜索，通过 `semanticRatio` 控制两者权重：
+ `semanticRatio` 
 
 ```php
 use Symfony\AI\Store\Query\HybridQuery;
@@ -999,17 +999,17 @@ echo $query->getSemanticRatio(); // 0.7
 echo $query->getKeywordRatio();  // 0.3（自动计算）
 ```
 
-| semanticRatio | 语义权重 | 关键词权重 | 适用场景 |
+| semanticRatio | | | |
 |:-------------:|:--------:|:----------:|----------|
-| 0.0 | 0% | 100% | 代码搜索、型号搜索、精确匹配 |
-| 0.3 | 30% | 70% | 技术文档、产品规格 |
-| 0.5 | 50% | 50% | 通用 FAQ（默认值） |
-| 0.7 | 70% | 30% | 企业知识库、自然语言问答 |
-| 1.0 | 100% | 0% | 推荐系统、意图理解 |
+| 0.0 | 0% | 100% | |
+| 0.3 | 30% | 70% | |
+| 0.5 | 50% | 50% | FAQ |
+| 0.7 | 70% | 30% | |
+| 1.0 | 100% | 0% | |
 
-### 9.5 查询选项
+### 9.5 
 
-所有查询都可以通过 `$options` 传递额外参数：
+ `$options` 
 
 ```php
 $results = $store->query($query, [
@@ -1019,9 +1019,9 @@ $results = $store->query($query, [
 ]);
 ```
 
-### 9.6 使用 supports() 检测后端能力
+### 9.6 supports() 
 
-在运行时检查后端是否支持特定查询类型，实现优雅降级：
+
 
 ```php
 use Symfony\AI\Store\Query\HybridQuery;
@@ -1041,11 +1041,11 @@ $results = $store->query($query, ['limit' => 10]);
 
 ---
 
-## 10. 检索器（Retriever）
+## 10. Retriever
 
-### 10.1 Retriever 类
+### 10.1 Retriever 
 
-`Retriever` 是 Store 组件的高层检索 API，封装了向量化 + 查询 + 事件分发的完整流程：
+`Retriever` Store API + + 
 
 ```php
 use Symfony\AI\Store\Retriever;
@@ -1066,9 +1066,9 @@ foreach ($documents as $doc) {
 }
 ```
 
-### 10.2 Retriever 的内部查询策略
+### 10.2 Retriever 
 
-`Retriever` 会根据 Store 的能力自动选择最优查询类型：
+`Retriever` Store 
 
 ```mermaid
 flowchart TD
@@ -1085,9 +1085,9 @@ flowchart TD
     style C fill:#fff3e0
 ```
 
-### 10.3 与 Agent 的 SimilaritySearch 工具集成
+### 10.3 Agent SimilaritySearch 
 
-Agent 组件提供了 `SimilaritySearch` 工具，让 AI 自动决定何时检索知识库：
+Agent `SimilaritySearch` AI 
 
 ```php
 use Symfony\AI\Agent\Agent;
@@ -1114,19 +1114,19 @@ $result = $agent->call(new MessageBag(
 echo $result->getContent();
 ```
 
-> 💡 `SimilaritySearch` 工具使用 `#[AsTool('similarity_search')]` 注解注册。当 LLM 判断需要查阅知识库时，会自动调用该工具，将搜索词向量化并查询 Store，返回最相关的文档内容。
+> `SimilaritySearch` `#[AsTool('similarity_search')]` LLM Store
 
 ---
 
-## 11. 重排序（Reranking）
+## 11. Reranking
 
-### 11.1 为什么需要重排序？
+### 11.1 
 
-向量检索使用**双编码器（Bi-Encoder）**架构——查询和文档分别独立编码，通过向量距离排序。速度快，但精度有限。
+**Bi-Encoder**——
 
-**交叉编码器（Cross-Encoder）** 将查询和文档拼接后一起送入模型，可以做细粒度的语义匹配，精度远高于双编码器，但速度慢。
+**Cross-Encoder** 
 
-**两阶段检索策略** 兼顾速度与精度：
+**** 
 
 ```
 向量搜索（快，取 50 条）→ Reranker 精排（慢但准，取 5 条）→ LLM 生成回答
@@ -1143,7 +1143,7 @@ flowchart LR
     style D fill:#e8f5e9
 ```
 
-### 11.2 RerankerInterface 与 Reranker
+### 11.2 RerankerInterface Reranker
 
 ```php
 use Symfony\AI\Store\Reranker\Reranker;
@@ -1167,11 +1167,11 @@ foreach ($reranked as $doc) {
 }
 ```
 
-> ⚠️ **Reranker 依赖 `Metadata::getText()`** 获取文档文本。只要通过 `Vectorizer` 索引的文档，原文会自动保存到 `_text` 字段，天然支持 Reranker。
+> **Reranker `Metadata::getText()`** `Vectorizer` `_text` Reranker
 
-### 11.3 RerankerListener：事件驱动的自动重排序
+### 11.3 RerankerListener
 
-通过事件监听器无缝集成重排序，**无需修改任何业务代码**：
+****
 
 ```php
 use Symfony\AI\Store\EventListener\RerankerListener;
@@ -1190,24 +1190,24 @@ $docs = $retriever->retrieve('如何退款？', ['limit' => 50]);
 // 实际返回 5 条重排序后的精排结果
 ```
 
-### 11.4 Reranker 模型对比
+### 11.4 Reranker 
 
-| 模型 | 提供商 | 语言支持 | 特点 |
+| | | | |
 |------|--------|----------|------|
-| `rerank-v3.5` | Cohere | 多语言 | 业界标杆，精度高 |
-| `rerank-english-v3.0` | Cohere | 英文 | 英文精度最优 |
-| `jina-reranker-v2-base-multilingual` | Jina AI | 多语言 | 可本地部署 |
-| `bge-reranker-large` | BAAI | 中英文 | 中文效果好 |
+| `rerank-v3.5` | Cohere | | |
+| `rerank-english-v3.0` | Cohere | | |
+| `jina-reranker-v2-base-multilingual` | Jina AI | | |
+| `bge-reranker-large` | BAAI | | |
 
 ---
 
-## 12. 事件系统
+## 12. 
 
-Store 组件通过 Symfony 事件调度器支持查询前后的拦截与增强。
+Store Symfony 
 
-### 12.1 PreQueryEvent：查询前拦截
+### 12.1 PreQueryEvent
 
-在向量化查询之前触发，监听器可以修改查询字符串和选项：
+
 
 ```php
 use Symfony\AI\Store\Event\PreQueryEvent;
@@ -1226,11 +1226,11 @@ $dispatcher->addListener(PreQueryEvent::class, function (PreQueryEvent $event): 
 });
 ```
 
-**常见用途**：拼写纠正、查询改写、同义词扩展、A/B 测试（修改 `semanticRatio`）。
+****A/B `semanticRatio`
 
-### 12.2 PostQueryEvent：查询后拦截
+### 12.2 PostQueryEvent
 
-在存储返回结果之后、业务代码接收之前触发：
+
 
 ```php
 use Symfony\AI\Store\Event\PostQueryEvent;
@@ -1251,15 +1251,15 @@ $dispatcher->addListener(PostQueryEvent::class, function (PostQueryEvent $event)
 });
 ```
 
-**常见用途**：结果重排序（`RerankerListener`）、低分过滤、结果去重、搜索日志埋点。
+****`RerankerListener`
 
 ---
 
-## 13. 距离计算
+## 13. 
 
 ### 13.1 DistanceStrategy
 
-`DistanceStrategy` 枚举定义了向量距离的计算方式：
+`DistanceStrategy` 
 
 ```php
 use Symfony\AI\Store\Distance\DistanceStrategy;
@@ -1271,19 +1271,19 @@ DistanceStrategy::MANHATTAN_DISTANCE; // 曼哈顿距离（L1）
 DistanceStrategy::CHEBYSHEV_DISTANCE; // 切比雪夫距离
 ```
 
-| 距离策略 | 公式 | 适用场景 | 推荐模型 |
+| | | | |
 |----------|------|----------|----------|
-| 余弦距离 | `1 - cos(A, B)` | 文本语义相似度（最常用） | OpenAI Embedding |
-| 欧氏距离 | `√Σ(aᵢ-bᵢ)²` | 图像特征、数值特征 | CLIP |
-| 内积 | `Σ(aᵢ·bᵢ)` | 归一化向量（等价余弦） | 已归一化的模型 |
-| 曼哈顿距离 | `Σ\|aᵢ-bᵢ\|` | 对异常值鲁棒的场景 | — |
-| 切比雪夫距离 | `max\|aᵢ-bᵢ\|` | 最大偏差敏感 | — |
+| | `1 - cos(A, B)` | | OpenAI Embedding |
+| | `√Σ(aᵢ-bᵢ)²` | | CLIP |
+| | `Σ(aᵢ·bᵢ)` | | |
+| | `Σ\|aᵢ-bᵢ\|` | | — |
+| | `max\|aᵢ-bᵢ\|` | | — |
 
-> 💡 **选择建议**：使用 OpenAI 嵌入模型（text-embedding-3-*）时，推荐**余弦距离**，这是模型训练优化的目标。
+> **** OpenAI text-embedding-3-*****
 
 ### 13.2 DistanceCalculator
 
-`DistanceCalculator` 用于 InMemory Store 中的本地向量距离计算：
+`DistanceCalculator` InMemory Store 
 
 ```php
 use Symfony\AI\Store\Distance\DistanceCalculator;
@@ -1304,11 +1304,11 @@ $sorted = $calculator->calculate(
 
 ---
 
-## 14. 完整 RAG 示例
+## 14. RAG 
 
-下面是一个端到端的 RAG 知识库问答系统示例，涵盖从文档加载到 AI 问答的全流程。
+ RAG AI 
 
-### 14.1 索引阶段
+### 14.1 
 
 ```php
 <?php
@@ -1379,7 +1379,7 @@ $indexer->index();
 echo "✅ 索引了 " . count($knowledgeBase) . " 篇文档\n";
 ```
 
-### 14.2 查询阶段：使用 Retriever
+### 14.2 Retriever
 
 ```php
 use Symfony\AI\Store\Retriever;
@@ -1413,7 +1413,7 @@ foreach ($documents as $doc) {
 }
 ```
 
-### 14.3 结合 Agent：自动检索与回答
+### 14.3 Agent
 
 ```php
 use Symfony\AI\Agent\Agent;
@@ -1453,9 +1453,9 @@ foreach ($questions as $question) {
 }
 ```
 
-### 14.4 Symfony 服务配置
+### 14.4 Symfony 
 
-在 Symfony 项目中，使用 AI Bundle 自动注入所有依赖：
+ Symfony AI Bundle 
 
 ```yaml
 # config/services.yaml
@@ -1501,7 +1501,7 @@ services:
             $eventDispatcher: '@event_dispatcher'
 ```
 
-使用 CLI 命令管理索引：
+ CLI 
 
 ```bash
 # 初始化存储
@@ -1519,32 +1519,32 @@ php bin/console ai:store:drop
 
 ---
 
-## 15. RAG 参数调优速查表
+## 15. RAG 
 
-| 参数 | 默认值 | 推荐调整 | 说明 |
+| | | | |
 |------|--------|----------|------|
-| `chunkSize` | 1000 | 短问答: 500，长文: 2000 | 分块大小 |
-| `overlap` | 200 | chunkSize 的 10~20% | 块间重叠 |
-| `limit`（粗召回） | — | 配合 Reranker: 20~50 | 初始检索数量 |
-| `topK`（Reranker） | 5 | 3~10 | 精排后返回数量 |
-| `semanticRatio` | 0.5 | 语义场景: 0.7，精确匹配: 0.3 | 混合查询权重 |
-| 嵌入模型维度 | 1536 | 高精度: 3072，性能优先: 768 | 影响存储和精度 |
+| `chunkSize` | 1000 | : 500: 2000 | |
+| `overlap` | 200 | chunkSize 10~20% | |
+| `limit` | — | Reranker: 20~50 | |
+| `topK`Reranker | 5 | 3~10 | |
+| `semanticRatio` | 0.5 | : 0.7: 0.3 | |
+| | 1536 | : 3072: 768 | |
 
-> 📌 **生产环境推荐配置**：`chunkSize=800` + `overlap=150` + `limit=20`（粗召回）+ `Reranker topK=5`（精排），使用 `text-embedding-3-small` 嵌入模型 + 余弦距离。
+> ****`chunkSize=800` + `overlap=150` + `limit=20`+ `Reranker topK=5` `text-embedding-3-small` + 
 
 ---
 
-## 16. 下一步
+## 16. 
 
-在本章中，我们掌握了 Store 组件的完整能力：
+ Store 
 
-- ✅ **文档系统**：TextDocument、VectorDocument、Metadata 的生命周期
-- ✅ **加载与转换**：8 种 Loader + 6 种 Transformer 构建文档处理管线
-- ✅ **向量化与索引**：Vectorizer + DocumentProcessor + SourceIndexer 的完整工作流
-- ✅ **25+ 存储后端**：从 InMemory 到 PostgreSQL 到云服务的选型与配置
-- ✅ **三种查询类型**：VectorQuery、TextQuery、HybridQuery 的使用场景
-- ✅ **检索与重排序**：Retriever + Reranker 两阶段检索策略
-- ✅ **事件系统**：PreQueryEvent / PostQueryEvent 实现查询扩展与结果增强
-- ✅ **Agent 集成**：SimilaritySearch 工具让 AI 自动检索知识库
+- ****TextDocumentVectorDocumentMetadata 
+- ****8 Loader + 6 Transformer 
+- ****Vectorizer + DocumentProcessor + SourceIndexer 
+- **25+ ** InMemory PostgreSQL 
+- ****VectorQueryTextQueryHybridQuery 
+- ****Retriever + Reranker 
+- ****PreQueryEvent / PostQueryEvent 
+- **Agent **SimilaritySearch AI 
 
-在 [第 5 章：Chat 组件](05-chat.md) 中，我们将学习如何构建交互式的 AI 聊天界面，将 Platform、Agent 和 Store 组件整合为完整的对话应用。
+ [ 5 Chat ](05-chat.md) AI PlatformAgent Store 

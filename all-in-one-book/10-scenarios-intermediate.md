@@ -1,6 +1,6 @@
 # 第 10 章：实战场景（进阶篇）
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 通过 5 个进阶实战场景，掌握 Agent 工具调用循环的内部机制、RAG 知识库检索管线、多智能体协作编排、联网搜索集成以及记忆系统架构，构建能够自主完成复杂任务的 AI 应用。
 
@@ -18,11 +18,11 @@
 
 | 场景 | 核心组件 | 难度 | 典型应用 |
 |------|---------|------|---------|
-| 工具增强型 AI 助手 | Agent + Toolbox | ⭐⭐⭐ | 企业内部助手 |
-| RAG 知识库问答 | Store + Agent | ⭐⭐⭐ | 文档问答 |
-| 多智能体客服路由 | Orchestrator + Handoff | ⭐⭐⭐⭐ | 多部门客服 |
-| 联网搜索研究助手 | Agent + 搜索工具 | ⭐⭐⭐ | 市场研究 |
-| 带记忆的个性化助手 | Agent + Memory | ⭐⭐⭐ | 个人助手 |
+| 工具增强型 AI 助手 | Agent + Toolbox | | 企业内部助手 |
+| RAG 知识库问答 | Store + Agent | | 文档问答 |
+| 多智能体客服路由 | Orchestrator + Handoff | | 多部门客服 |
+| 联网搜索研究助手 | Agent + 搜索工具 | | 市场研究 |
+| 带记忆的个性化助手 | Agent + Memory | | 个人助手 |
 
 ---
 
@@ -83,7 +83,7 @@ Agent::call($messages) 的内部流程
   安全机制：默认最多循环 10 次（MaxIterationsExceededException）
 ```
 
-> 📝 **知识扩展：AgentProcessor 的双重角色**
+> **知识扩展：AgentProcessor 的双重角色**
 >
 > `AgentProcessor` 同时实现了 `InputProcessorInterface` 和 `OutputProcessorInterface`：
 > - 作为 InputProcessor：在消息发送给 LLM 前，将 Toolbox 中所有工具的 JSON Schema 注入 `options['tools']`
@@ -137,7 +137,7 @@ class ServerStatusTool
 }
 ```
 
-> 📝 **知识扩展：工具参数的自动发现**
+> **知识扩展：工具参数的自动发现**
 >
 > `ReflectionToolFactory` 通过 PHP 反射自动分析 `__invoke()` 方法的参数：
 > - 参数名 → 工具调用参数名（如 `$hostname`）
@@ -401,7 +401,7 @@ $store->add($chunks);
 echo sprintf("已索引 %d 个文档块\n", count($chunks));
 ```
 
-> 📝 **知识扩展：分块策略的选择**
+> **知识扩展：分块策略的选择**
 >
 > 分块大小（`chunkSize`）和重叠（`overlap`）直接影响 RAG 质量：
 >
@@ -491,7 +491,7 @@ $results = $store->query(new HybridQuery(
 ));
 ```
 
-> 📝 **知识扩展：PostgreSQL pgvector 的查询选项**
+> **知识扩展：PostgreSQL pgvector 的查询选项**
 >
 > Postgres Store 支持丰富的查询选项：
 > ```php

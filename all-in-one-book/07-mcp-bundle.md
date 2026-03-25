@@ -1,6 +1,6 @@
 # 第 7 章：MCP Bundle —— 模型上下文协议
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 掌握 MCP（Model Context Protocol）协议的核心概念，学会使用 MCP Bundle 将 Symfony 应用的业务逻辑暴露为 AI 可调用的工具、资源和提示模板，并配置 AI 客户端（如 Claude Desktop、Cursor）进行连接和交互。
 
@@ -98,7 +98,7 @@ AI 助手                              MCP 服务器
 composer require symfony/mcp-bundle
 ```
 
-> 📌 **注意**：MCP Bundle 目前处于实验阶段，不受 Symfony 语义版本保证约束。API 可能在未来版本中变化。
+> **注意**：MCP Bundle 目前处于实验阶段，不受 Symfony 语义版本保证约束。API 可能在未来版本中变化。
 
 ### 3.2 注册 Bundle
 
@@ -175,7 +175,7 @@ class WeatherTool
 }
 ```
 
-> 💡 **关键点**：方法参数会自动转换为 JSON Schema，AI 按参数名和类型传入对应值。带默认值的参数自动标记为可选。
+> **关键点**：方法参数会自动转换为 JSON Schema，AI 按参数名和类型传入对应值。带默认值的参数自动标记为可选。
 
 ### 4.2 属性参数
 
@@ -453,7 +453,7 @@ class UserResources
 | **URI 类型** | 固定 URI | 动态模板（含 `{param}` 占位符） |
 | **示例** | `app://docs/api` | `app://users/{userId}` |
 | **适用场景** | 配置文件、静态文档 | 按 ID 查询、分页数据 |
-| **缓存友好** | ✅ 内容稳定 | ⚠️ 内容动态 |
+| **缓存友好** | ✅ 内容稳定 | 内容动态 |
 
 ---
 
@@ -537,7 +537,7 @@ php bin/console mcp:server
 | **调试** | Symfony Profiler | Console 输出 |
 | **典型场景** | 生产环境、远程访问 | 本地开发、IDE 集成 |
 
-> 💡 **建议**：开发环境使用 stdio 模式配合 IDE，生产环境使用 HTTP 模式并配置认证。
+> **建议**：开发环境使用 stdio 模式配合 IDE，生产环境使用 HTTP 模式并配置认证。
 
 ### 7.4 Session 存储选项
 
@@ -585,7 +585,7 @@ MCP Bundle 不仅可以作为服务端暴露工具，还可以作为**客户端*
 
 ### 8.2 在 Agent 中使用远程 MCP 工具
 
-> ⚠️ 以下为概念示例，展示 MCP 工具如何与 Agent 集成。实际集成方式请参考最新文档。
+> 以下为概念示例，展示 MCP 工具如何与 Agent 集成。实际集成方式请参考最新文档。
 
 ```php
 use Symfony\AI\Agent\Agent;
@@ -617,14 +617,14 @@ $response = $agent->call(new MessageBag(Message::ofUser('请帮我查询订单 O
 
 | 信息 | 说明 |
 |------|------|
-| 📊 已注册工具列表 | 名称、描述、参数 Schema |
-| 📝 已注册提示模板 | 名称、描述 |
-| 📂 已注册资源列表 | URI、名称、MIME 类型 |
-| 📐 已注册资源模板 | URI 模板、名称 |
+| 已注册工具列表 | 名称、描述、参数 Schema |
+| 已注册提示模板 | 名称、描述 |
+| 已注册资源列表 | URI、名称、MIME 类型 |
+| 已注册资源模板 | URI 模板、名称 |
 
 访问路径：`/_profiler` → 选择请求 → `MCP` 面板。
 
-> 💡 **调试技巧**：通过 Profiler 面板可以快速确认你的 MCP 工具是否被正确注册，以及参数 Schema 是否符合预期。
+> **调试技巧**：通过 Profiler 面板可以快速确认你的 MCP 工具是否被正确注册，以及参数 Schema 是否符合预期。
 
 ---
 

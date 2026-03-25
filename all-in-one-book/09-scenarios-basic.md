@@ -1,6 +1,6 @@
 # 第 9 章：实战场景（基础篇）
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 通过 6 个基础实战场景，将 Platform 和 Chat 组件的核心概念付诸实践：从简单的问答机器人到多模态内容理解，从结构化数据提取到实时流式对话，掌握 AI 应用开发的常见模式。每个场景都包含架构概述、完整实现、错误处理和生产优化建议。
 
@@ -16,12 +16,12 @@
 
 | 场景 | 核心组件 | 难度 | 典型应用 |
 |------|---------|------|---------|
-| 基础问答聊天机器人 | Platform | ⭐ | 官网客服、FAQ |
-| 多轮对话与会话持久化 | Platform + Chat | ⭐⭐ | 在线客服 |
-| 结构化数据提取 | Platform + StructuredOutput | ⭐⭐ | 表单解析、实体识别 |
-| 多模态内容理解 | Platform + Content Types | ⭐⭐ | 图片/文档/音频分析 |
-| 多语言翻译助手 | Platform + Prompt Engineering | ⭐⭐ | 文档翻译、本地化 |
-| 实时流式对话 | Platform + SSE | ⭐⭐⭐ | ChatGPT 式界面 |
+| 基础问答聊天机器人 | Platform | | 官网客服、FAQ |
+| 多轮对话与会话持久化 | Platform + Chat | | 在线客服 |
+| 结构化数据提取 | Platform + StructuredOutput | | 表单解析、实体识别 |
+| 多模态内容理解 | Platform + Content Types | | 图片/文档/音频分析 |
+| 多语言翻译助手 | Platform + Prompt Engineering | | 文档翻译、本地化 |
+| 实时流式对话 | Platform + SSE | | ChatGPT 式界面 |
 
 ---
 
@@ -48,7 +48,7 @@
 └──────────┘     └──────────────┘     └──────────────────┘     └──────────────┘
 ```
 
-> 📝 **知识扩展**：流程中的 `Contract` 是一个常被忽略但至关重要的组件。它基于 Symfony Serializer，负责将 `Message`、`ToolCall` 等对象序列化为各平台特定的 JSON 格式。每个 Bridge 都有自己的 Contract 实现（如 `AnthropicContract`、`OpenAiContract`），你无需直接操作它——`PlatformFactory` 会自动创建并注入。
+> **知识扩展**：流程中的 `Contract` 是一个常被忽略但至关重要的组件。它基于 Symfony Serializer，负责将 `Message`、`ToolCall` 等对象序列化为各平台特定的 JSON 格式。每个 Bridge 都有自己的 Contract 实现（如 `AnthropicContract`、`OpenAiContract`），你无需直接操作它——`PlatformFactory` 会自动创建并注入。
 
 ### 2.3 所需依赖
 
@@ -97,7 +97,7 @@ foreach ($response->asStream() as $chunk) {
 }
 ```
 
-> 📝 **知识扩展：流式响应的内部机制**
+> **知识扩展：流式响应的内部机制**
 >
 > `asStream()` 返回一个 PHP `Generator`，内部通过 HTTP 分块传输（chunked transfer）逐步接收 AI 平台的响应。每收到一个 token（或几个 token），Generator 就 `yield` 一次。这意味着：
 > - Generator 只能迭代**一次**——如果需要重复使用，先 `asText()` 保存完整内容
@@ -175,7 +175,7 @@ try {
 }
 ```
 
-> 📝 **知识扩展：Platform 异常体系**
+> **知识扩展：Platform 异常体系**
 >
 > Symfony AI 定义了完整的异常层次，让你可以针对不同类型的错误做出精确响应：
 >
@@ -300,7 +300,7 @@ echo $response->getContent();
 // "根据我们的退货政策，质量问题免费退货；非质量问题需承担 ¥15 运费。"
 ```
 
-> 📝 **知识扩展：Chat 的交叉类型约束**
+> **知识扩展：Chat 的交叉类型约束**
 >
 > `Chat::__construct()` 对 store 参数使用了 PHP 交叉类型（intersection type）：
 > ```php
@@ -316,15 +316,15 @@ echo $response->getContent();
 
 | 后端 | Composer 包 | 持久化 | 性能 | 搜索 | 适用场景 |
 |------|------------|--------|------|------|---------|
-| **InMemory** | 内置 | ❌ | ⚡ 极快 | ❌ | 单元测试 |
-| **Redis** | `symfony/ai-redis-message-store` | ✅ | ⚡ 快 | ❌ | 高并发生产环境 |
-| **Doctrine DBAL** | `symfony/ai-doctrine-message-store` | ✅ | 🔄 中 | SQL | 已有关系数据库的项目 |
-| **MongoDB** | `symfony/ai-mongo-db-message-store` | ✅ | ⚡ 快 | ✅ | 文档型数据项目 |
-| **Session** | 内置 | 📦 会话 | ⚡ 快 | ❌ | 简单 Web 应用 |
-| **Cache** | 内置 | ⏰ TTL | ⚡ 快 | ❌ | 短期对话 |
-| **Cloudflare** | `symfony/ai-cloudflare-message-store` | ✅ | 🌐 CDN | ❌ | 边缘部署 |
-| **Meilisearch** | `symfony/ai-meilisearch-message-store` | ✅ | ⚡ 快 | ✅ | 需要搜索对话历史 |
-| **SurrealDB** | `symfony/ai-surreal-db-message-store` | ✅ | ⚡ 快 | ✅ | SurrealDB 项目 |
+| **InMemory** | 内置 | ❌ | 极快 | ❌ | 单元测试 |
+| **Redis** | `symfony/ai-redis-message-store` | ✅ | 快 | ❌ | 高并发生产环境 |
+| **Doctrine DBAL** | `symfony/ai-doctrine-message-store` | ✅ | 中 | SQL | 已有关系数据库的项目 |
+| **MongoDB** | `symfony/ai-mongo-db-message-store` | ✅ | 快 | ✅ | 文档型数据项目 |
+| **Session** | 内置 | 会话 | 快 | ❌ | 简单 Web 应用 |
+| **Cache** | 内置 | TTL | 快 | ❌ | 短期对话 |
+| **Cloudflare** | `symfony/ai-cloudflare-message-store` | ✅ | CDN | ❌ | 边缘部署 |
+| **Meilisearch** | `symfony/ai-meilisearch-message-store` | ✅ | 快 | ✅ | 需要搜索对话历史 |
+| **SurrealDB** | `symfony/ai-surreal-db-message-store` | ✅ | 快 | ✅ | SurrealDB 项目 |
 
 ### 3.6 在 Symfony 控制器中使用
 
@@ -496,7 +496,7 @@ enum Sentiment: string
 }
 ```
 
-> 📝 **知识扩展：`#[With]` 属性的重要性**
+> **知识扩展：`#[With]` 属性的重要性**
 >
 > `#[With(description: '...')]` 属性的 `description` 参数**直接影响提取质量**。AI 会参考这些描述来决定如何填充每个字段。好的描述应该包含：
 > - 字段的含义和用途
@@ -504,11 +504,11 @@ enum Sentiment: string
 > - 可接受值的范围或示例
 >
 > ```php
-> // ❌ 差的描述——AI 不知道期望什么格式
+> // 差的描述——AI 不知道期望什么格式
 > #[With(description: '日期')]
 > public readonly string $date,
 >
-> // ✅ 好的描述——AI 能准确提取
+> // 好的描述——AI 能准确提取
 > #[With(description: '事件发生日期，格式为 YYYY-MM-DD，如 2024-01-15')]
 > public readonly string $date,
 > ```
@@ -866,12 +866,12 @@ echo $response->asText();
 | 内容类型 | OpenAI GPT-4o | Anthropic Claude | Google Gemini | Ollama（本地） |
 |---------|:-------------:|:----------------:|:-------------:|:------------:|
 | **文本** | ✅ | ✅ | ✅ | ✅ |
-| **图片** | ✅ | ✅ | ✅ | ⚠️ 部分模型 |
+| **图片** | ✅ | ✅ | ✅ | 部分模型 |
 | **PDF 文档** | ✅ | ✅ | ✅ | ❌ |
 | **音频** | ✅ | ❌ | ✅ | ❌ |
 | **视频** | ❌ | ❌ | ✅ | ❌ |
 
-> ⚠️ **注意**：使用前请确认目标平台和模型支持你需要的模态。如果不支持，`Platform` 会抛出 `MissingModelSupportException`。
+> **注意**：使用前请确认目标平台和模型支持你需要的模态。如果不支持，`Platform` 会抛出 `MissingModelSupportException`。
 
 ---
 
@@ -1180,7 +1180,7 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
 
 ### 7.5 结合 Chat 组件实现多轮流式对话
 
-> ⚠️ **注意**：`Chat::submit()` 返回的是已解析的 `AssistantMessage` 对象，不是 `DeferredResult`，因此不支持 `asStream()` 流式输出。
+> **注意**：`Chat::submit()` 返回的是已解析的 `AssistantMessage` 对象，不是 `DeferredResult`，因此不支持 `asStream()` 流式输出。
 > 如果需要多轮对话 + 流式输出，需要自行管理消息历史（使用 `MessageStoreInterface`）并直接调用 `Platform::invoke()` 配合 `'stream' => true`：
 
 ```php

@@ -1,30 +1,30 @@
-# 第 2 章：Platform 组件深入剖析
+# 2 Platform 
 
-## 🎯 本章学习目标
+## 
 
-深入理解 Platform 组件的核心架构、消息系统、结果体系、结构化输出、流式响应与事件系统，掌握 33+ 桥接器的使用方式，为构建生产级 AI 应用打下坚实基础。
-
----
-
-## 1. 回顾
-
-在 [第 1 章：快速入门](01-quick-start.md) 中，我们动手体验了 Platform 的五项核心能力：
-
-- 使用 `PlatformFactory::create()` 创建平台实例
-- 通过 `invoke()` + `asText()` 完成基础文本对话
-- 用 `stream => true` 实现流式响应
-- 用 `response_format` 选项将 AI 输出映射为 PHP 对象
-- 用 `ImageUrl` / `Image` 实现多模态图片输入
-
-本章将从架构层面，系统性地拆解 Platform 组件的每一个子系统。
+ Platform 33+ AI 
 
 ---
 
-## 2. 核心架构
+## 1. 
 
-### 2.1 PlatformInterface —— 一切的起点
+ [ 1 ](01-quick-start.md) Platform 
 
-`PlatformInterface` 是整个 Symfony AI 的核心抽象，定义了与 AI 模型交互的统一入口：
+- `PlatformFactory::create()` 
+- `invoke()` + `asText()` 
+- `stream => true` 
+- `response_format` AI PHP 
+- `ImageUrl` / `Image` 
+
+ Platform 
+
+---
+
+## 2. 
+
+### 2.1 PlatformInterface —— 
+
+`PlatformInterface` Symfony AI AI 
 
 ```php
 namespace Symfony\AI\Platform;
@@ -46,15 +46,15 @@ interface PlatformInterface
 }
 ```
 
-**三个参数的含义**：
+****
 
-| 参数 | 类型 | 说明 |
+| | | |
 |------|------|------|
-| `$model` | `string` | 模型名称，如 `'gpt-4o'`、`'claude-3-5-sonnet-20241022'`、`'llama3.2'` |
-| `$input` | `array\|string\|object` | 最常用 `MessageBag`（对话历史），也可以是原始字符串或数组 |
-| `$options` | `array` | 调用选项：`temperature`、`max_tokens`、`stream`、`tools`、`response_format` 等 |
+| `$model` | `string` | `'gpt-4o'``'claude-3-5-sonnet-20241022'``'llama3.2'` |
+| `$input` | `array\|string\|object` | `MessageBag` |
+| `$options` | `array` | `temperature``max_tokens``stream``tools``response_format` |
 
-**返回值 `DeferredResult`** —— 延迟求值包装器，调用取值方法时才真正执行响应转换：
+** `DeferredResult`** —— 
 
 ```php
 $deferred = $platform->invoke('gpt-4o', $messageBag);
@@ -72,11 +72,11 @@ $deferred->asReranking();   // RerankingEntry[] —— 重排序结果
 $deferred->getMetadata();   // Metadata —— 元数据（Token 使用等）
 ```
 
-> 💡 **延迟求值的好处**：`invoke()` 返回后并不立即解析 HTTP 响应，这样可以在 `ResultEvent` 中对结果进行拦截和替换（例如结构化输出的订阅器就是在此事件中工作的）。
+> ****`invoke()` HTTP `ResultEvent` 
 
-### 2.2 Bridge 模式：ModelClientInterface 与 ResultConverterInterface
+### 2.2 Bridge ModelClientInterface ResultConverterInterface
 
-Platform 的核心扩展机制是 **Bridge 模式**——每个 AI 平台对应一个 Bridge，包含两个关键接口的实现：
+Platform **Bridge **—— AI Bridge
 
 ```php
 namespace Symfony\AI\Platform;
@@ -105,7 +105,7 @@ interface ResultConverterInterface
 }
 ```
 
-一个典型的 Bridge 目录结构：
+ Bridge 
 
 ```
 Bridge/OpenAi/
@@ -118,11 +118,11 @@ Bridge/OpenAi/
 └── Tests/
 ```
 
-> 📌 每个 Bridge 只需实现 `supports()` + `request()` / `convert()`，Platform 会自动根据模型名称路由到正确的 Bridge。
+> Bridge `supports()` + `request()` / `convert()`Platform Bridge
 
-### 2.3 请求完整流程
+### 2.3 
 
-当你调用 `$platform->invoke('gpt-4o', $messageBag, $options)` 时，内部经历以下步骤：
+ `$platform->invoke('gpt-4o', $messageBag, $options)` 
 
 ```
 应用代码
@@ -159,7 +159,7 @@ PlatformInterface::invoke(model, input, options)
            └─ 合并元数据
 ```
 
-下面是对应的 Mermaid 序列图：
+ Mermaid 
 
 ```mermaid
 sequenceDiagram
@@ -201,9 +201,9 @@ sequenceDiagram
     Platform-->>App: string 文本内容
 ```
 
-### 2.4 Platform 类内部实现
+### 2.4 Platform 
 
-`Platform` 类是 `PlatformInterface` 的默认实现：
+`Platform` `PlatformInterface` 
 
 ```php
 final class Platform implements PlatformInterface
@@ -218,15 +218,15 @@ final class Platform implements PlatformInterface
 }
 ```
 
-当有多个 Bridge 注册时，Platform 遍历所有 `ModelClientInterface` 实例，找到第一个 `supports($model)` 返回 `true` 的客户端来处理请求。
+ Bridge Platform `ModelClientInterface` `supports($model)` `true` 
 
 ---
 
-## 3. 消息系统详解
+## 3. 
 
-消息系统是 Platform 组件的输入核心。所有与 AI 的对话都通过消息对象来表达。
+ Platform AI 
 
-### 3.1 Role 枚举
+### 3.1 Role 
 
 ```php
 namespace Symfony\AI\Platform\Message;
@@ -240,11 +240,11 @@ enum Role: string
 }
 ```
 
-对话中的每条消息都携带一个角色，AI 模型依据角色理解对话上下文。
+AI 
 
-### 3.2 消息类型
+### 3.2 
 
-#### SystemMessage —— 系统提示
+#### SystemMessage —— 
 
 ```php
 namespace Symfony\AI\Platform\Message;
@@ -257,7 +257,7 @@ final class SystemMessage implements MessageInterface
 }
 ```
 
-系统消息设定 AI 的角色、行为规则和约束条件。大多数 API 要求系统消息唯一且在消息列表最前：
+ AI API 
 
 ```php
 use Symfony\AI\Platform\Message\SystemMessage;
@@ -265,7 +265,7 @@ use Symfony\AI\Platform\Message\SystemMessage;
 $system = new SystemMessage('你是一位 PHP 安全专家，只讨论安全相关话题。');
 ```
 
-#### UserMessage —— 用户消息
+#### UserMessage —— 
 
 ```php
 final class UserMessage implements MessageInterface
@@ -279,7 +279,7 @@ final class UserMessage implements MessageInterface
 }
 ```
 
-支持传入一个或多个内容对象，实现多模态输入：
+
 
 ```php
 use Symfony\AI\Platform\Message\UserMessage;
@@ -296,7 +296,7 @@ $msg = new UserMessage(
 );
 ```
 
-#### AssistantMessage —— 助手消息
+#### AssistantMessage —— 
 
 ```php
 final class AssistantMessage implements MessageInterface
@@ -313,7 +313,7 @@ final class AssistantMessage implements MessageInterface
 }
 ```
 
-AI 的回复消息，在多轮对话中用于保存历史上下文：
+AI 
 
 ```php
 use Symfony\AI\Platform\Message\AssistantMessage;
@@ -328,7 +328,7 @@ $msg = new AssistantMessage(
 );
 ```
 
-#### ToolCallMessage —— 工具调用结果
+#### ToolCallMessage —— 
 
 ```php
 final class ToolCallMessage implements MessageInterface
@@ -340,7 +340,7 @@ final class ToolCallMessage implements MessageInterface
 }
 ```
 
-将工具执行结果返回给 AI：
+ AI
 
 ```php
 use Symfony\AI\Platform\Message\ToolCallMessage;
@@ -350,9 +350,9 @@ $toolCall = new ToolCall('call_abc123', 'get_weather', ['city' => 'Beijing']);
 $msg = new ToolCallMessage($toolCall, '{"temperature": 25, "condition": "Sunny"}');
 ```
 
-### 3.3 Message 工厂类
+### 3.3 Message 
 
-`Message` 类提供静态工厂方法，简化消息创建：
+`Message` 
 
 ```php
 namespace Symfony\AI\Platform\Message;
@@ -376,7 +376,7 @@ final class Message
 }
 ```
 
-**使用示例**：
+****
 
 ```php
 use Symfony\AI\Platform\Message\Message;
@@ -402,9 +402,9 @@ $assistant = Message::ofAssistant('服务容器是一种管理对象依赖关系
 $toolResult = Message::ofToolCall($toolCall, '{"result": 42}');
 ```
 
-### 3.4 MessageBag：消息容器
+### 3.4 MessageBag
 
-`MessageBag` 管理一次对话中的所有消息，是 `invoke()` 最常用的 `$input` 类型：
+`MessageBag` `invoke()` `$input` 
 
 ```php
 namespace Symfony\AI\Platform\Message;
@@ -429,7 +429,7 @@ final class MessageBag
 }
 ```
 
-**多轮对话示例**：
+****
 
 ```php
 use Symfony\AI\Platform\Message\Message;
@@ -456,25 +456,25 @@ $response3 = $platform->invoke('gpt-4o', $messages)->asText();
 echo $response3; // AI 会基于完整的对话上下文回答
 ```
 
-> ⚠️ **注意**：每轮对话都发送完整的消息历史，Token 消耗会随对话轮次增长。在长对话场景中，建议实现滑动窗口或摘要策略来控制消息长度。
+> ****Token 
 
-### 3.5 Content 内容类型
+### 3.5 Content 
 
-`UserMessage` 支持多种内容类型，全部实现 `ContentInterface`：
+`UserMessage` `ContentInterface`
 
-| 类 | 用途 | 构造方式 |
+| | | |
 |----|------|----------|
-| `Text` | 纯文本内容 | `new Text('内容')` |
-| `Image` | 二进制图片 | `Image::fromFile('/path/to/img.jpg')` |
-| `ImageUrl` | 图片 URL | `new ImageUrl('https://...')` |
-| `Audio` | 音频数据 | `Audio::fromFile('/path/to/audio.mp3')` |
-| `Document` | 文档（PDF 等） | `Document::fromFile('/path/to/doc.pdf')` |
-| `DocumentUrl` | 文档 URL | `new DocumentUrl('https://...')` |
-| `Video` | 视频数据 | `Video::fromFile('/path/to/video.mp4')` |
-| `File` | 通用文件（基类） | `new File($data, 'mime/type')` |
-| `Collection` | 内容集合 | `new Collection($text, $image, ...)` |
+| `Text` | | `new Text('')` |
+| `Image` | | `Image::fromFile('/path/to/img.jpg')` |
+| `ImageUrl` | URL | `new ImageUrl('https://...')` |
+| `Audio` | | `Audio::fromFile('/path/to/audio.mp3')` |
+| `Document` | PDF | `Document::fromFile('/path/to/doc.pdf')` |
+| `DocumentUrl` | URL | `new DocumentUrl('https://...')` |
+| `Video` | | `Video::fromFile('/path/to/video.mp4')` |
+| `File` | | `new File($data, 'mime/type')` |
+| `Collection` | | `new Collection($text, $image, ...)` |
 
-**二进制内容的懒加载**：`Image`、`Audio`、`Document`、`Video` 都继承自 `File`，支持懒加载——文件在序列化时才读取：
+****`Image``Audio``Document``Video` `File`——
 
 ```php
 use Symfony\AI\Platform\Message\Content\Image;
@@ -498,7 +498,7 @@ $image->asDataUrl();   // data:image/jpeg;base64,...
 $image->getFormat();   // 'image/jpeg'
 ```
 
-**多模态组合示例**：
+****
 
 ```php
 use Symfony\AI\Platform\Message\Message;
@@ -540,11 +540,11 @@ $messages = new MessageBag(
 
 ---
 
-## 4. 模型与能力
+## 4. 
 
-### 4.1 Model 类
+### 4.1 Model 
 
-`Model` 类描述单个 AI 模型，包含名称、能力列表和默认选项：
+`Model` AI 
 
 ```php
 namespace Symfony\AI\Platform;
@@ -564,9 +564,9 @@ final class Model
 }
 ```
 
-### 4.2 ModelCatalog 模型目录
+### 4.2 ModelCatalog 
 
-`ModelCatalogInterface` 管理模型信息，每个 Bridge 提供其平台专用的 `ModelCatalog`：
+`ModelCatalogInterface` Bridge `ModelCatalog`
 
 ```php
 interface ModelCatalogInterface
@@ -576,7 +576,7 @@ interface ModelCatalogInterface
 }
 ```
 
-`AbstractModelCatalog` 提供基础实现，支持参数解析和变体匹配：
+`AbstractModelCatalog` 
 
 ```php
 // 通过平台获取模型目录
@@ -595,9 +595,9 @@ $model = $catalog->getModel('gpt-4o?temperature=0.7');
 $model = $catalog->getModel('llama3.2:3b');
 ```
 
-### 4.3 Capability 枚举
+### 4.3 Capability 
 
-`Capability` 枚举完整定义了模型所有可能的能力：
+`Capability` 
 
 ```php
 namespace Symfony\AI\Platform;
@@ -646,9 +646,9 @@ enum Capability: string
 }
 ```
 
-### 4.4 主流模型能力对照表
+### 4.4 
 
-| 模型 | 文本对话 | 图片输入 | 流式 | 工具调用 | 结构化输出 | 嵌入 | 语音 | 思考链 |
+| | | | | | | | | |
 |------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **GPT-4o** | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | **GPT-4o-mini** | ✅ | ✅ | ✅ | ✅ | ✅ | — | — | — |
@@ -662,13 +662,13 @@ enum Capability: string
 | **Mistral Large** | ✅ | — | ✅ | ✅ | ✅ | — | — | — |
 | **DeepSeek Chat** | ✅ | — | ✅ | ✅ | — | — | — | — |
 | **DeepSeek Reasoner** | ✅ | — | ✅ | — | — | — | — | ✅ |
-| **Llama 3.2（Ollama）** | ✅ | 依模型 | 依模型 | 依模型 | ✅ | 依模型 | — | 依模型 |
+| **Llama 3.2Ollama** | ✅ | | | | ✅ | | — | |
 | **ElevenLabs** | — | — | — | — | — | — | ✅ TTS | — |
 | **Cartesia** | — | — | — | — | — | — | ✅ TTS | — |
 
-> 📌 DALL-E 3 的能力是 `TEXT_TO_IMAGE`（文字生成图像），上表中的"文本对话"指 `INPUT_MESSAGES` + `OUTPUT_TEXT`。
+> DALL-E 3 `TEXT_TO_IMAGE`"" `INPUT_MESSAGES` + `OUTPUT_TEXT`
 
-**使用能力检查防止运行时错误**：
+****
 
 ```php
 $model = $platform->getModelCatalog()->getModel('gpt-4o');
@@ -685,24 +685,24 @@ if (!$model->supports(Capability::INPUT_VIDEO)) {
 
 ---
 
-## 5. 结果系统
+## 5. 
 
-### 5.1 结果类型总览
+### 5.1 
 
-所有结果类继承自 `BaseResult`（实现 `ResultInterface`），携带元数据和原始响应访问能力：
+ `BaseResult` `ResultInterface`
 
-| 结果类型 | 内容类型 | 获取方式 | 典型场景 |
+| | | | |
 |---------|---------|---------|---------|
-| `TextResult` | `string` | `asText()` | 对话、摘要、翻译 |
-| `ObjectResult` | `object` | `asObject()` | 结构化数据提取 |
-| `BinaryResult` | `string`（二进制） | `asBinary()` / `asFile()` | 图片生成、语音合成 |
-| `VectorResult` | `Vector[]` | `asVectors()` | 文本嵌入 |
-| `ToolCallResult` | `ToolCall[]` | `asToolCalls()` | 工具调用 |
-| `StreamResult` | `Generator` | `asStream()` | 流式输出 |
-| `ChoiceResult` | `ResultInterface[]` | `getResult()` | 多候选生成 |
-| `RerankingResult` | `RerankingEntry[]` | `asReranking()` | 搜索重排序 |
+| `TextResult` | `string` | `asText()` | |
+| `ObjectResult` | `object` | `asObject()` | |
+| `BinaryResult` | `string` | `asBinary()` / `asFile()` | |
+| `VectorResult` | `Vector[]` | `asVectors()` | |
+| `ToolCallResult` | `ToolCall[]` | `asToolCalls()` | |
+| `StreamResult` | `Generator` | `asStream()` | |
+| `ChoiceResult` | `ResultInterface[]` | `getResult()` | |
+| `RerankingResult` | `RerankingEntry[]` | `asReranking()` | |
 
-### 5.2 TextResult —— 最常用的结果
+### 5.2 TextResult —— 
 
 ```php
 $text = $platform->invoke('gpt-4o', new MessageBag(
@@ -712,9 +712,9 @@ $text = $platform->invoke('gpt-4o', new MessageBag(
 echo $text; // "PHP 是一种广泛用于 Web 开发的服务端脚本语言。"
 ```
 
-### 5.3 BinaryResult —— 二进制数据
+### 5.3 BinaryResult —— 
 
-用于图片生成（DALL-E）和语音合成（ElevenLabs / Cartesia）：
+DALL-EElevenLabs / Cartesia
 
 ```php
 // 图片生成
@@ -733,7 +733,7 @@ $result = $platform->invoke('eleven_multilingual_v2', new MessageBag(
 $result->asFile('/tmp/welcome.mp3');
 ```
 
-### 5.4 VectorResult —— 嵌入向量
+### 5.4 VectorResult —— 
 
 ```php
 $vectors = $platform->invoke(
@@ -745,19 +745,19 @@ $embedding = $vectors[0]->getData(); // float[]，长度 1536
 echo '向量维度：' . count($embedding);
 ```
 
-**嵌入模型维度对比**：
+****
 
-| 模型 | 维度 | 提供商 |
+| | | |
 |------|------|--------|
 | `text-embedding-3-small` | 1536 | OpenAI |
-| `text-embedding-3-large` | 3072（可降维至 256） | OpenAI |
+| `text-embedding-3-large` | 3072 256 | OpenAI |
 | `text-embedding-004` | 768 | Google Gemini |
 | `voyage-3-large` | 1024 / 2048 | Voyage AI |
-| `nomic-embed-text`（Ollama） | 768 | 本地运行 |
+| `nomic-embed-text`Ollama | 768 | |
 
-### 5.5 ToolCallResult —— 工具调用
+### 5.5 ToolCallResult —— 
 
-当模型决定调用工具时返回：
+
 
 ```php
 $deferred = $platform->invoke('gpt-4o', $messages, ['tools' => $tools]);
@@ -772,9 +772,9 @@ if ($result instanceof \Symfony\AI\Platform\Result\ToolCallResult) {
 }
 ```
 
-### 5.6 StreamResult —— 流式输出
+### 5.6 StreamResult —— 
 
-流式响应通过 PHP `Generator` 逐块产生内容：
+ PHP `Generator` 
 
 ```php
 $stream = $platform->invoke('gpt-4o', $messages, ['stream' => true])->asStream();
@@ -790,9 +790,9 @@ foreach ($stream as $chunk) {
 }
 ```
 
-### 5.7 Token 使用追踪
+### 5.7 Token 
 
-Token 用量信息通过元数据获取：
+Token 
 
 ```php
 $deferred = $platform->invoke('gpt-4o', $messages);
@@ -811,17 +811,17 @@ if (null !== $tokenUsage) {
 }
 ```
 
-> 💡 **流式模式的 Token 用量**：在流式模式下，Token 用量只有在整个流消费完毕后才可用。
+> ** Token **Token 
 
 ---
 
-## 6. 结构化输出（深入）
+## 6. 
 
-结构化输出是 Platform 最强大的功能之一——将 AI 的自由文本响应自动反序列化为 PHP 对象。
+ Platform —— AI PHP 
 
-### 6.1 #[With] 属性
+### 6.1 #[With] 
 
-`#[With]` PHP Attribute 用于为类属性添加 JSON Schema 描述信息：
+`#[With]` PHP Attribute JSON Schema 
 
 ```php
 use Symfony\AI\Platform\Contract\JsonSchema\Attribute\With;
@@ -842,22 +842,22 @@ class WeatherReport
 }
 ```
 
-`#[With]` 支持的参数：
+`#[With]` 
 
-| 参数 | 类型 | 用途 |
+| | | |
 |------|------|------|
-| `description` | `string` | 字段描述（帮助 AI 理解含义） |
-| `example` | `string` | 示例值 |
-| `enum` | `array` | 允许值列表 |
-| `minimum` | `int\|float` | 最小值 |
-| `maximum` | `int\|float` | 最大值 |
-| `minLength` | `int` | 字符串最小长度 |
-| `maxLength` | `int` | 字符串最大长度 |
-| `pattern` | `string` | 正则表达式匹配 |
-| `minItems` | `int` | 数组最少元素数 |
-| `maxItems` | `int` | 数组最多元素数 |
+| `description` | `string` | AI |
+| `example` | `string` | |
+| `enum` | `array` | |
+| `minimum` | `int\|float` | |
+| `maximum` | `int\|float` | |
+| `minLength` | `int` | |
+| `maxLength` | `int` | |
+| `pattern` | `string` | |
+| `minItems` | `int` | |
+| `maxItems` | `int` | |
 
-### 6.2 基本使用
+### 6.2 
 
 ```php
 use Symfony\AI\Platform\Message\Message;
@@ -879,9 +879,9 @@ echo $report->condition;   // 晴
 echo $report->humidity;    // 60
 ```
 
-### 6.3 嵌套 DTO 和数组
+### 6.3 DTO 
 
-结构化输出支持嵌套对象和类型化数组：
+
 
 ```php
 use Symfony\AI\Platform\Contract\JsonSchema\Attribute\With;
@@ -950,9 +950,9 @@ foreach ($invoice->items as $item) {
 }
 ```
 
-### 6.4 枚举支持
+### 6.4 
 
-PHP 枚举可以直接用作属性类型：
+PHP 
 
 ```php
 enum Priority: string
@@ -1002,7 +1002,7 @@ echo $ticket->priority->value; // 'high'
 echo $ticket->category->value; // 'bug'
 ```
 
-### 6.5 完整复杂示例：代码审查 DTO
+### 6.5 DTO
 
 ```php
 use Symfony\AI\Platform\Contract\JsonSchema\Attribute\With;
@@ -1068,9 +1068,9 @@ foreach ($review->issues as $issue) {
 echo "评分: {$review->score}/10\n";
 ```
 
-### 6.6 JSON Schema 生成
+### 6.6 JSON Schema 
 
-`Factory` 类可以独立使用，从 PHP 类生成 JSON Schema：
+`Factory` PHP JSON Schema
 
 ```php
 use Symfony\AI\Platform\Contract\JsonSchema\Factory;
@@ -1093,15 +1093,15 @@ $schema = $factory->buildProperties(WeatherReport::class);
 // }
 ```
 
-> ⚠️ 结构化输出与流式响应不能同时使用。如果同时指定 `stream => true` 和 `response_format`，会抛出 `InvalidArgumentException`。
+> `stream => true` `response_format` `InvalidArgumentException`
 
 ---
 
-## 7. 流式响应（深入）
+## 7. 
 
-### 7.1 基本流式处理
+### 7.1 
 
-流式响应让用户无需等待完整回复，每生成一个 Token 就即时返回：
+ Token 
 
 ```php
 $stream = $platform->invoke('gpt-4o', new MessageBag(
@@ -1115,7 +1115,7 @@ foreach ($stream as $chunk) {
 }
 ```
 
-### 7.2 Symfony Controller 中的 SSE 流式响应
+### 7.2 Symfony Controller SSE 
 
 ```php
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -1160,9 +1160,9 @@ class ChatController extends AbstractController
 }
 ```
 
-### 7.3 流式与工具调用结合
+### 7.3 
 
-流式模式下也可能收到工具调用：
+
 
 ```php
 $stream = $platform->invoke('gpt-4o', $messages, [
@@ -1205,9 +1205,9 @@ if ([] !== $toolCalls) {
 }
 ```
 
-### 7.4 流式 Token 用量
+### 7.4 Token 
 
-Token 用量只有在整个流消费完毕后才可用：
+Token 
 
 ```php
 $deferred = $platform->invoke('gpt-4o', $messages, ['stream' => true]);
@@ -1228,13 +1228,13 @@ if (null !== $tokenUsage) {
 
 ---
 
-## 8. 事件系统
+## 8. 
 
-Platform 提供两个核心事件，允许在 AI 调用前后注入自定义逻辑。
+Platform AI 
 
-### 8.1 InvocationEvent —— 调用前
+### 8.1 InvocationEvent —— 
 
-在 AI 模型被调用之前触发，可修改模型、输入和选项：
+ AI 
 
 ```php
 namespace Symfony\AI\Platform\Event;
@@ -1252,7 +1252,7 @@ final class InvocationEvent extends Event
 }
 ```
 
-**用例：请求日志与审计**
+****
 
 ```php
 use Symfony\AI\Platform\Event\InvocationEvent;
@@ -1280,7 +1280,7 @@ class AuditSubscriber implements EventSubscriberInterface
 }
 ```
 
-**用例：自动注入用户上下文**
+****
 
 ```php
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -1298,9 +1298,9 @@ class AddUserContextListener
 }
 ```
 
-### 8.2 ResultEvent —— 结果返回后
+### 8.2 ResultEvent —— 
 
-在 AI 返回结果后、应用代码获取结果前触发：
+ AI 
 
 ```php
 namespace Symfony\AI\Platform\Event;
@@ -1318,7 +1318,7 @@ final class ResultEvent extends Event
 }
 ```
 
-**用例：成本追踪**
+****
 
 ```php
 use Symfony\AI\Platform\Event\ResultEvent;
@@ -1346,7 +1346,7 @@ class CostTrackingSubscriber implements EventSubscriberInterface
 }
 ```
 
-**用例：速率限制**
+****
 
 ```php
 class RateLimitSubscriber implements EventSubscriberInterface
@@ -1373,75 +1373,75 @@ class RateLimitSubscriber implements EventSubscriberInterface
 }
 ```
 
-> 📌 **StructuredOutput 就是通过事件实现的**——`StructuredOutput\PlatformSubscriber` 监听 `ResultEvent`，将 `TextResult` 自动反序列化为 `ObjectResult`。
+> **StructuredOutput **——`StructuredOutput\PlatformSubscriber` `ResultEvent` `TextResult` `ObjectResult`
 
 ---
 
-## 9. 平台桥接器一览
+## 9. 
 
-Platform 组件提供 33+ 个 AI 平台的桥接器实现。
+Platform 33+ AI 
 
-### 9.1 主流商业平台
+### 9.1 
 
-| 桥接器 | Composer 包 | 主要用途 |
+| | Composer | |
 |--------|------------|---------|
-| `OpenAi` | `symfony/ai-open-ai-platform` | GPT、DALL-E、Whisper、Embeddings |
-| `Anthropic` | `symfony/ai-anthropic-platform` | Claude 系列，长上下文、分析 |
-| `Gemini` | `symfony/ai-gemini-platform` | 多模态 AI，超长上下文（2M） |
-| `Azure` | `symfony/ai-azure-platform` | 企业级 OpenAI 模型部署 |
-| `Bedrock` | `symfony/ai-bedrock-platform` | AWS 云端多种 AI 模型 |
-| `VertexAi` | `symfony/ai-vertex-ai-platform` | Google 企业级 AI 平台 |
-| `Mistral` | `symfony/ai-mistral-platform` | 开源高效模型 |
-| `Perplexity` | `symfony/ai-perplexity-platform` | 搜索增强 AI |
+| `OpenAi` | `symfony/ai-open-ai-platform` | GPTDALL-EWhisperEmbeddings |
+| `Anthropic` | `symfony/ai-anthropic-platform` | Claude |
+| `Gemini` | `symfony/ai-gemini-platform` | AI2M |
+| `Azure` | `symfony/ai-azure-platform` | OpenAI |
+| `Bedrock` | `symfony/ai-bedrock-platform` | AWS AI |
+| `VertexAi` | `symfony/ai-vertex-ai-platform` | Google AI |
+| `Mistral` | `symfony/ai-mistral-platform` | |
+| `Perplexity` | `symfony/ai-perplexity-platform` | AI |
 
-### 9.2 开源 / 本地模型
+### 9.2 / 
 
-| 桥接器 | Composer 包 | 主要用途 |
+| | Composer | |
 |--------|------------|---------|
-| `Ollama` | `symfony/ai-ollama-platform` | 本地运行开源模型 |
-| `LmStudio` | `symfony/ai-lm-studio-platform` | 本地 LLM GUI 工具 |
-| `HuggingFace` | `symfony/ai-hugging-face-platform` | 开源模型推理 API |
-| `Replicate` | `symfony/ai-replicate-platform` | 云端运行开源模型 |
-| `TransformersPhp` | `symfony/ai-transformers-php-platform` | 纯 PHP ML 推理 |
-| `DockerModelRunner` | `symfony/ai-docker-model-runner-platform` | Docker 环境运行模型 |
+| `Ollama` | `symfony/ai-ollama-platform` | |
+| `LmStudio` | `symfony/ai-lm-studio-platform` | LLM GUI |
+| `HuggingFace` | `symfony/ai-hugging-face-platform` | API |
+| `Replicate` | `symfony/ai-replicate-platform` | |
+| `TransformersPhp` | `symfony/ai-transformers-php-platform` | PHP ML |
+| `DockerModelRunner` | `symfony/ai-docker-model-runner-platform` | Docker |
 
-### 9.3 专用服务
+### 9.3 
 
-| 桥接器 | Composer 包 | 主要用途 |
+| | Composer | |
 |--------|------------|---------|
-| `ElevenLabs` | `symfony/ai-eleven-labs-platform` | 高质量语音合成 |
-| `Cartesia` | `symfony/ai-cartesia-platform` | 实时语音 AI |
-| `Voyage` | `symfony/ai-voyage-platform` | 专业嵌入向量 |
-| `Cerebras` | `symfony/ai-cerebras-platform` | 超高速推理 |
-| `DeepSeek` | `symfony/ai-deep-seek-platform` | 高性价比开源模型 |
-| `Meta` | `symfony/ai-meta-platform` | Llama 官方 API |
+| `ElevenLabs` | `symfony/ai-eleven-labs-platform` | |
+| `Cartesia` | `symfony/ai-cartesia-platform` | AI |
+| `Voyage` | `symfony/ai-voyage-platform` | |
+| `Cerebras` | `symfony/ai-cerebras-platform` | |
+| `DeepSeek` | `symfony/ai-deep-seek-platform` | |
+| `Meta` | `symfony/ai-meta-platform` | Llama API |
 
-### 9.4 云服务商 / 代理
+### 9.4 / 
 
-| 桥接器 | Composer 包 | 主要用途 |
+| | Composer | |
 |--------|------------|---------|
-| `OpenRouter` | `symfony/ai-open-router-platform` | 统一多模型路由 |
-| `Scaleway` | `symfony/ai-scaleway-platform` | 欧洲云 AI 服务 |
-| `Ovh` | `symfony/ai-ovh-platform` | 欧洲云 AI 服务 |
-| `AiMlApi` | `symfony/ai-ai-ml-api-platform` | AI 模型 API 代理 |
-| `Albert` | `symfony/ai-albert-platform` | 法国政府 AI 服务 |
-| `AmazeeAi` | `symfony/ai-amazee-ai-platform` | 开源 AI 基础设施 |
-| `Decart` | `symfony/ai-decart-platform` | AI 推理平台 |
-| `ModelsDev` | `symfony/ai-models-dev-platform` | Models.dev 目录集成 |
+| `OpenRouter` | `symfony/ai-open-router-platform` | |
+| `Scaleway` | `symfony/ai-scaleway-platform` | AI |
+| `Ovh` | `symfony/ai-ovh-platform` | AI |
+| `AiMlApi` | `symfony/ai-ai-ml-api-platform` | AI API |
+| `Albert` | `symfony/ai-albert-platform` | AI |
+| `AmazeeAi` | `symfony/ai-amazee-ai-platform` | AI |
+| `Decart` | `symfony/ai-decart-platform` | AI |
+| `ModelsDev` | `symfony/ai-models-dev-platform` | Models.dev |
 
-### 9.5 特殊功能桥接器
+### 9.5 
 
-| 桥接器 | Composer 包 | 用途 |
+| | Composer | |
 |--------|------------|------|
-| `Cache` | `symfony/ai-cache-platform` | 为任何平台添加响应缓存 |
-| `Failover` | `symfony/ai-failover-platform` | 多平台自动故障转移 |
-| `Generic` | `symfony/ai-generic-platform` | 通用 OpenAI 兼容适配器 |
-| `ClaudeCode` | `symfony/ai-claude-code-platform` | Claude Code CLI 集成 |
+| `Cache` | `symfony/ai-cache-platform` | |
+| `Failover` | `symfony/ai-failover-platform` | |
+| `Generic` | `symfony/ai-generic-platform` | OpenAI |
+| `ClaudeCode` | `symfony/ai-claude-code-platform` | Claude Code CLI |
 | `OpenResponses` | `symfony/ai-open-responses-platform` | Open Responses API |
 
-### 9.6 PlatformFactory 模式
+### 9.6 PlatformFactory 
 
-每个 Bridge 都提供一个 `PlatformFactory` 类，一行代码即可创建平台实例：
+ Bridge `PlatformFactory` 
 
 ```php
 use Symfony\Component\HttpClient\HttpClient;
@@ -1482,15 +1482,15 @@ $mistral = MistralFactory::create(
 );
 ```
 
-> 💡 **统一接口的好处**：创建后的所有平台实例都遵循 `PlatformInterface`，调用方式完全一致——切换模型只需更改工厂类和模型名称。
+> **** `PlatformInterface`——
 
 ---
 
-## 10. 高级用法
+## 10. 
 
-### 10.1 CachePlatform —— 响应缓存
+### 10.1 CachePlatform —— 
 
-`CachePlatform` 包装任意平台，为相同输入缓存 AI 响应，适合开发调试和节省 API 费用：
+`CachePlatform` AI API 
 
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
@@ -1515,11 +1515,11 @@ $result2 = $cachedPlatform->invoke('gpt-4o', $messages, [
 ])->asText();
 ```
 
-> ⚠️ 缓存仅在选项中包含非空 `prompt_cache_key` 时生效。缓存键基于模型名、输入内容和 `prompt_cache_key` 的组合生成。`stream => true` 的请求不会被缓存。
+> `prompt_cache_key` `prompt_cache_key` `stream => true` 
 
-### 10.2 FailoverPlatform —— 故障转移
+### 10.2 FailoverPlatform —— 
 
-`FailoverPlatform` 接受多个平台实例，当主平台调用失败时自动切换到备用平台：
+`FailoverPlatform` 
 
 ```php
 use Symfony\AI\Platform\Bridge\Failover\FailoverPlatform;
@@ -1545,7 +1545,7 @@ $failoverPlatform = new FailoverPlatform(
 $result = $failoverPlatform->invoke('gpt-4o', $messages)->asText();
 ```
 
-**生产环境推荐配置**：
+****
 
 ```php
 // 商业 API + 本地模型兜底
@@ -1559,9 +1559,9 @@ $failoverPlatform = new FailoverPlatform(
 );
 ```
 
-### 10.3 Template 模板渲染
+### 10.3 Template 
 
-Platform 支持通过 `TemplateRendererInterface` 在消息中使用模板变量：
+Platform `TemplateRendererInterface` 
 
 ```php
 use Symfony\AI\Platform\Message\Template;
@@ -1586,26 +1586,26 @@ $result = $platform->invoke('gpt-4o', $messages, [
 ])->asText();
 ```
 
-这在需要动态调整系统提示的场景（多语言、多角色等）非常实用。
+
 
 ---
 
-## 11. 常用调用选项速查
+## 11. 
 
-| 选项 | 类型 | 说明 | 支持的桥接器 |
+| | | | |
 |------|------|------|-------------|
-| `temperature` | `float` (0.0–2.0) | 输出随机性 | 几乎所有 |
-| `max_tokens` | `int` | 最大输出 Token 数 | 几乎所有 |
-| `stream` | `bool` | 启用流式响应 | 大部分 |
-| `tools` | `Tool[]` | 可用工具列表 | 支持 TOOL_CALLING 的模型 |
-| `response_format` | `string` (类名) | 结构化输出 DTO 类 | 支持 OUTPUT_STRUCTURED 的模型 |
-| `top_p` | `float` | nucleus sampling 概率 | 大部分 |
-| `top_k` | `int` | top-K 采样 | Anthropic / Gemini |
-| `n` | `int` | 生成多个候选 | OpenAI |
-| `seed` | `int` | 固定随机种子 | OpenAI |
-| `thinking` | `array` | 扩展思考模式 | Anthropic Claude 3.7 |
+| `temperature` | `float` (0.0–2.0) | | |
+| `max_tokens` | `int` | Token | |
+| `stream` | `bool` | | |
+| `tools` | `Tool[]` | | TOOL_CALLING |
+| `response_format` | `string` () | DTO | OUTPUT_STRUCTURED |
+| `top_p` | `float` | nucleus sampling | |
+| `top_k` | `int` | top-K | Anthropic / Gemini |
+| `n` | `int` | | OpenAI |
+| `seed` | `int` | | OpenAI |
+| `thinking` | `array` | | Anthropic Claude 3.7 |
 
-**temperature 取值建议**：
+**temperature **
 
 ```php
 // temperature = 0：确定性输出（代码生成、数据提取）
@@ -1623,17 +1623,17 @@ $platform->invoke('gpt-4o', $messages, ['temperature' => 1.0]);
 
 ---
 
-## 12. 下一步
+## 12. 
 
-在本章中，我们系统地学习了 Platform 组件的每一个子系统：
+ Platform 
 
-- **核心架构**：`PlatformInterface`、Bridge 模式、完整请求流程
-- **消息系统**：Role、四种消息类型、Message 工厂、MessageBag、九种内容类型
-- **模型能力**：Model 类、Capability 枚举、能力检查
-- **结果体系**：八种结果类型、Token 用量追踪
-- **结构化输出**：`#[With]` 属性、嵌套 DTO、枚举、JSON Schema 生成
-- **流式响应**：Generator 迭代、SSE 集成、与工具调用结合
-- **事件系统**：`InvocationEvent`、`ResultEvent`、日志/监控/限流
-- **桥接器全景**：33+ 桥接器、PlatformFactory 模式、Cache/Failover
+- ****`PlatformInterface`Bridge 
+- ****RoleMessage MessageBag
+- ****Model Capability 
+- ****Token 
+- ****`#[With]` DTOJSON Schema 
+- ****Generator SSE 
+- ****`InvocationEvent``ResultEvent`//
+- ****33+ PlatformFactory Cache/Failover
 
-Platform 是 Symfony AI 的地基。在 [第 3 章：Agent 组件](03-agent.md) 中，我们将学习如何在 Platform 之上构建智能 Agent——它能自主规划、调用工具、维护对话状态，把 AI 从"问答机器"变成"能干活的助手"。
+Platform Symfony AI [ 3 Agent ](03-agent.md) Platform Agent—— AI """"

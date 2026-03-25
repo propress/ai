@@ -1,6 +1,6 @@
 # 第 11 章：实战场景（高级篇）
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 通过 5 个高级实战场景，深入理解生产环境关键技术：FailoverPlatform 和 CachePlatform 的内部机制、本地模型私有化部署、内容审核流水线、CrewAI 风格多智能体团队协作、以及端到端企业知识库系统的完整实现。
 
@@ -22,11 +22,11 @@
 
 | 场景 | 核心技术 | 难度 | 典型应用 |
 |------|---------|------|---------|
-| 高可用 AI 服务架构 | FailoverPlatform + CachePlatform | ⭐⭐⭐⭐ | 所有生产级应用 |
-| 本地模型私有化部署 | Ollama Bridge | ⭐⭐⭐ | 数据敏感场景 |
-| 内容审核流水线 | StructuredOutput + Agent | ⭐⭐⭐ | UGC 平台 |
-| CrewAI 风格多智能体团队 | MultiAgent + 流水线 | ⭐⭐⭐⭐ | 内容生产 |
-| 端到端企业知识库 | 全组件集成 | ⭐⭐⭐⭐⭐ | 企业级系统 |
+| 高可用 AI 服务架构 | FailoverPlatform + CachePlatform | | 所有生产级应用 |
+| 本地模型私有化部署 | Ollama Bridge | | 数据敏感场景 |
+| 内容审核流水线 | StructuredOutput + Agent | | UGC 平台 |
+| CrewAI 风格多智能体团队 | MultiAgent + 流水线 | | 内容生产 |
+| 端到端企业知识库 | 全组件集成 | | 企业级系统 |
 
 ---
 
@@ -96,7 +96,7 @@ $platform = new FailoverPlatform([$openai, $anthropic], $rateLimiterFactory);
 $response = $platform->invoke($model, $messages);
 ```
 
-> 📝 **知识扩展：FailoverPlatform 的内部行为**
+> **知识扩展：FailoverPlatform 的内部行为**
 >
 > FailoverPlatform 的核心是一个闭包驱动的重试循环：
 >
@@ -157,7 +157,7 @@ $response = $platform->invoke($model, $messages, [
 ]);
 ```
 
-> 📝 **知识扩展：CachePlatform 的缓存键构成**
+> **知识扩展：CachePlatform 的缓存键构成**
 >
 > CachePlatform 的缓存键由三部分组成：
 >
@@ -172,12 +172,12 @@ $response = $platform->invoke($model, $messages, [
 >
 > **重要陷阱**：`MessageBag` 使用 UUID v7 作为 ID，每次 `new MessageBag()` 都会生成新 ID。这意味着：
 > ```php
-> // ❌ 这两个 MessageBag 内容相同，但 ID 不同——不会命中缓存！
+> // 这两个 MessageBag 内容相同，但 ID 不同——不会命中缓存！
 > $bag1 = new MessageBag(Message::ofUser('你好'));
 > $bag2 = new MessageBag(Message::ofUser('你好'));
 > // $bag1->getId() !== $bag2->getId()
 >
-> // ✅ 要实现内容缓存，需要复用同一个 MessageBag 实例
+> // 要实现内容缓存，需要复用同一个 MessageBag 实例
 > // 或者在缓存键中使用内容哈希而非 MessageBag ID
 > ```
 >
@@ -242,7 +242,7 @@ ai:
 | CachePlatform（70% 命中率） | 30,000 | ~$150 |
 | + 简单任务用 mini 模型 | 30,000 | ~$35 |
 
-> 💡 **经验值**：FAQ 类应用的缓存命中率通常可达 60-80%，API 成本降低效果显著。
+> **经验值**：FAQ 类应用的缓存命中率通常可达 60-80%，API 成本降低效果显著。
 
 ---
 
