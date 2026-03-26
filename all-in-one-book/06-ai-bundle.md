@@ -1,6 +1,6 @@
 # 第 6 章：AI Bundle —— Symfony 框架集成
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 掌握 AI Bundle 的完整配置能力：将 Platform、Agent、Store、Chat 四大组件无缝集成到 Symfony 框架中，通过 YAML 配置自动装配所有 AI 服务，并利用 Profiler、CLI 命令、安全机制等 Symfony 生态能力提升 AI 开发效率。
 
@@ -43,11 +43,11 @@ $response = $agent->call(new MessageBag(Message::ofUser('天气如何？')));
 # config/packages/ai.yaml — 一次配置
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
     agent:
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
 ```
 
@@ -82,7 +82,7 @@ class ChatController extends AbstractController
 
 **不使用 AI Bundle**：非 Symfony 项目（如纯 PHP 脚本、其他框架）可直接使用底层组件。
 
-> 💡 AI Bundle 本身不包含 AI 逻辑。它是一个纯粹的"胶水层"，负责将 Platform、Agent、Store、Chat 组件粘合到 Symfony 的 DI 容器中。
+> AI Bundle 本身不包含 AI 逻辑。它是一个纯粹的"胶水层"，负责将 Platform、Agent、Store、Chat 组件粘合到 Symfony 的 DI 容器中。
 
 ---
 
@@ -94,13 +94,13 @@ class ChatController extends AbstractController
 composer require symfony/ai-bundle
 ```
 
-> 📌 如果使用 Symfony Flex，Bundle 会自动注册到 `config/bundles.php`。如需手动注册：
+> 如果使用 Symfony Flex，Bundle 会自动注册到 `config/bundles.php`。如需手动注册：
 >
 > ```php
 > // config/bundles.php
 > return [
->     // ...
->     Symfony\AI\AiBundle\AiBundle::class => ['all' => true],
+> // ...
+> Symfony\AI\AiBundle\AiBundle::class => ['all' => true],
 > ];
 > ```
 
@@ -146,11 +146,11 @@ GEMINI_API_KEY=AIza...
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 ```
 
-> ⚠️ 永远不要在配置文件中硬编码 API 密钥。使用 `.env.local` 文件或 Symfony Secrets Vault 管理敏感信息。
+> 永远不要在配置文件中硬编码 API 密钥。使用 `.env.local` 文件或 Symfony Secrets Vault 管理敏感信息。
 
 ---
 
@@ -164,7 +164,7 @@ ai:
 ai:
     platform:
         # OpenAI 平台
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
         # Anthropic Claude 平台
@@ -177,19 +177,19 @@ ai:
 
         # Ollama（本地部署，无需 API 密钥）
         ollama:
-            url: 'http://localhost:11434'
+            endpoint: 'http://localhost:11434'
 ```
 
 **注册结果**：每个平台配置会注册为 `ai.platform.<配置键>` 服务：
 
 | 配置键 | 服务 ID | 实现类 |
 |--------|---------|--------|
-| `open_ai` | `ai.platform.open_ai` | `OpenAi\Platform` |
+| `openai` | `ai.platform.openai` | `OpenAi\Platform` |
 | `anthropic` | `ai.platform.anthropic` | `Anthropic\Platform` |
 | `gemini` | `ai.platform.gemini` | `Gemini\Platform` |
 | `ollama` | `ai.platform.ollama` | `Ollama\Platform` |
 
-> 💡 如果只配置了一个平台，AI Bundle 会自动将其注册为 `PlatformInterface` 的别名，可以直接类型提示注入。
+> 如果只配置了一个平台，AI Bundle 会自动将其注册为 `PlatformInterface` 的别名，可以直接类型提示注入。
 
 ### 4.2 支持的平台一览
 
@@ -197,22 +197,22 @@ AI Bundle 支持 20+ 种 AI 平台：
 
 | 平台 | 配置键 | 必需参数 |
 |------|--------|---------|
-| OpenAI | `open_ai` | `api_key` |
+| OpenAI | `openai` | `api_key` |
 | Anthropic | `anthropic` | `api_key` |
-| Azure OpenAI | `azure_open_ai` | `base_url`, `api_key`, `api_version` |
+| Azure OpenAI | `azure` | `base_url`, `api_key`, `deployment` |
 | Google Gemini | `gemini` | `api_key` |
-| Google Vertex AI | `vertex_ai` | `project`, `location` |
-| AWS Bedrock | `bedrock` | `region` |
-| Ollama | `ollama` | `url` |
+| Google Vertex AI | `vertexai` | `project_id`, `location` |
+| AWS Bedrock | `bedrock` | - |
+| Ollama | `ollama` | `endpoint` |
 | Mistral | `mistral` | `api_key` |
-| DeepSeek | `deep_seek` | `api_key` |
-| HuggingFace | `hugging_face` | `api_key` |
-| LM Studio | `lm_studio` | `url` |
+| DeepSeek | `deepseek` | `api_key` |
+| HuggingFace | `huggingface` | `api_key` |
+| LM Studio | `lmstudio` | `host_url` |
 | Perplexity | `perplexity` | `api_key` |
 | Cerebras | `cerebras` | `api_key` |
-| OpenRouter | `open_router` | `api_key` |
-| Docker Model Runner | `docker_model_runner` | `url` |
-| ElevenLabs | `eleven_labs` | `api_key` |
+| OpenRouter | `openrouter` | `api_key` |
+| Docker Model Runner | `dockermodelrunner` | `host_url` |
+| ElevenLabs | `elevenlabs` | `api_key` |
 
 ### 4.3 Azure OpenAI 配置
 
@@ -221,10 +221,12 @@ Azure OpenAI 需要额外的端点和版本信息：
 ```yaml
 ai:
     platform:
-        azure_open_ai:
-            base_url: '%env(AZURE_OPENAI_BASE_URL)%'
-            api_key: '%env(AZURE_OPENAI_API_KEY)%'
-            api_version: '2024-02-01'
+        azure:
+            my_instance:
+                base_url: '%env(AZURE_OPENAI_BASE_URL)%'
+                api_key: '%env(AZURE_OPENAI_API_KEY)%'
+                deployment: 'gpt-4o'
+                api_version: '2024-02-01'
 ```
 
 ### 4.4 Google Vertex AI 配置
@@ -234,8 +236,8 @@ Vertex AI 基于 Google Cloud 项目：
 ```yaml
 ai:
     platform:
-        vertex_ai:
-            project: '%env(GOOGLE_PROJECT_ID)%'
+        vertexai:
+            project_id: '%env(GOOGLE_PROJECT_ID)%'
             location: 'us-central1'
 ```
 
@@ -246,7 +248,7 @@ ai:
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
@@ -255,23 +257,25 @@ ai:
 
         # 故障转移平台：依次尝试，全部失败才抛出异常
         failover:
-            platforms:
-                - open_ai       # 第一优先级
-                - anthropic     # 第二优先级
-                - gemini        # 第三优先级
+            main:
+                platforms:
+                    - ai.platform.openai       # 第一优先级
+                    - ai.platform.anthropic     # 第二优先级
+                    - ai.platform.gemini        # 第三优先级
+                rate_limiter: limiter.failover   # RateLimiter 服务 ID
 ```
 
 **行为逻辑**：
 
-```
-调用 ai.platform.failover
-  ├── 尝试 open_ai → 成功 → 返回结果
-  ├── open_ai 失败 → 尝试 anthropic → 成功 → 返回结果
+```text
+调用 ai.platform.failover.main
+  ├── 尝试 openai → 成功 → 返回结果
+  ├── openai 失败 → 尝试 anthropic → 成功 → 返回结果
   ├── anthropic 失败 → 尝试 gemini → 成功 → 返回结果
   └── 全部失败 → 抛出异常
 ```
 
-> 💡 Failover 平台适合生产环境的高可用场景。配合监控，可以在主平台故障时无感切换，确保业务不中断。
+> Failover 平台适合生产环境的高可用场景。配合监控，可以在主平台故障时无感切换，确保业务不中断。
 
 ### 4.6 Cache（缓存）配置
 
@@ -280,18 +284,19 @@ ai:
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
-        # 缓存平台：对 open_ai 的请求进行缓存
+        # 缓存平台：对 openai 的请求进行缓存
         cache:
-            platform: open_ai
-            cache_pool: cache.app
+            openai_cached:
+                platform: ai.platform.openai
+                service: cache.app          # 缓存池服务 ID（默认 cache.app）
 ```
 
 **行为**：相同的模型 + 相同的输入 → 直接从缓存返回，不消耗 Token，响应接近零延迟。
 
-> ⚠️ 缓存平台适合确定性查询（如翻译、分类）。对于需要多样性的场景（如创意写作），谨慎使用缓存。
+> 缓存平台适合确定性查询（如翻译、分类）。对于需要多样性的场景（如创意写作），谨慎使用缓存。
 
 ### 4.7 在代码中使用平台
 
@@ -303,14 +308,14 @@ class MyService
 {
     public function __construct(
         // 注入特定平台
-        #[Target('open_ai')] private PlatformInterface $openai,
+        #[Target('openai')] private PlatformInterface $openai,
         #[Target('anthropic')] private PlatformInterface $anthropic,
     ) {}
 
     public function generate(string $prompt): string
     {
         $response = $this->openai->invoke(
-            new Model('gpt-4o'),
+            'gpt-4o',
             $prompt,
         );
 
@@ -330,14 +335,14 @@ ai:
     agent:
         # 最简配置：只需指定平台和模型
         my_agent:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
 
         # 完整配置：包含系统提示和工具
         assistant:
             platform: ai.platform.anthropic
             model: claude-sonnet-4-20250514
-            system_prompt: |
+            prompt: |
                 你是一个专业的 Symfony 开发助手。
                 回答问题时请给出代码示例。
             tools:
@@ -394,7 +399,7 @@ class WeatherTool
 ai:
     agent:
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             tools:
                 - App\Tool\WeatherTool
@@ -443,7 +448,7 @@ services:
               priority: 10
 ```
 
-> 📌 未指定 `agent` 属性的处理器对**所有 Agent** 生效（MultiAgent 除外）。处理器按 `priority` 降序排列执行。
+> 未指定 `agent` 属性的处理器对**所有 Agent** 生效（MultiAgent 除外）。处理器按 `priority` 降序排列执行。
 
 ### 5.4 Multi-Agent 配置
 
@@ -453,11 +458,11 @@ services:
 ai:
     multi_agent:
         orchestrator:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             agents:
                 researcher:
-                    platform: ai.platform.open_ai
+                    platform: ai.platform.openai
                     model: gpt-4o-mini
                 writer:
                     platform: ai.platform.anthropic
@@ -479,7 +484,7 @@ class ChatController extends AbstractController
         $userMessage = $request->request->get('message');
         $response = $agent->call(
             new MessageBag(Message::ofUser($userMessage)),
-            new Options(model: 'gpt-4o'),
+            ['model' => 'gpt-4o'],
         );
 
         return $this->json([
@@ -489,7 +494,7 @@ class ChatController extends AbstractController
 }
 ```
 
-> 💡 使用 `#[Target('配置名')]` 属性可以注入指定的 Agent 服务。配置名即 YAML 中 `agent:` 下的键名。
+> 使用 `#[Target('配置名')]` 属性可以注入指定的 Agent 服务。配置名即 YAML 中 `agent:` 下的键名。
 
 ---
 
@@ -503,33 +508,32 @@ AI Bundle 支持 25+ 种向量存储后端：
 ai:
     store:
         # Qdrant 向量存储
-        qdrant_store:
-            qdrant:
-                host: '%env(QDRANT_HOST)%'
-                port: 6333
-                collection: my_documents
+        qdrant:
+            my_store:
+                endpoint: '%env(QDRANT_ENDPOINT)%'
                 api_key: '%env(QDRANT_API_KEY)%'
+                collection_name: my_documents
 
         # Pinecone 向量存储
-        pinecone_store:
-            pinecone:
+        pinecone:
+            my_store:
                 api_key: '%env(PINECONE_API_KEY)%'
                 host: '%env(PINECONE_HOST)%'
                 namespace: production
 
         # PostgreSQL pgvector
-        postgres_store:
-            postgres:
-                dbal_connection: doctrine.dbal.default_connection
-                table: embeddings
+        postgres:
+            my_store:
+                connection: doctrine.dbal.default_connection
+                table_name: embeddings
                 distance: cosine
 
         # InMemory 存储（适合测试）
-        test_store:
-            in_memory: ~
+        memory:
+            test_store: ~
 ```
 
-**注册结果**：每个 Store 配置注册为 `ai.store.<配置名>` 服务。
+**注册结果**：每个 Store 配置注册为 `ai.store.<类型>.<实例名>` 服务。
 
 ### 6.2 支持的向量存储一览
 
@@ -537,14 +541,14 @@ ai:
 |------|--------|---------|
 | Pinecone | `pinecone` | 托管服务，开箱即用 |
 | Qdrant | `qdrant` | 高性能开源向量数据库 |
-| ChromaDB | `chroma_db` | 轻量级嵌入数据库 |
+| ChromaDB | `chromadb` | 轻量级嵌入数据库 |
 | Elasticsearch | `elasticsearch` | 全文 + 向量混合搜索 |
 | PostgreSQL | `postgres` | 已有 PG 数据库的项目 |
-| MongoDB | `mongo_db` | 文档数据库 + 向量搜索 |
+| MongoDB | `mongodb` | 文档数据库 + 向量搜索 |
 | Redis | `redis` | 高速缓存级向量搜索 |
 | Milvus | `milvus` | 大规模向量搜索 |
 | Weaviate | `weaviate` | 语义搜索引擎 |
-| InMemory | `in_memory` | 测试和原型开发 |
+| InMemory | `memory` | 测试和原型开发 |
 
 ### 6.3 Indexer（索引器）配置
 
@@ -554,9 +558,9 @@ ai:
 ai:
     indexer:
         document_indexer:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: text-embedding-3-small
-            store: ai.store.qdrant_store
+            store: ai.store.qdrant.my_store
 ```
 
 ### 6.4 消息存储配置（Chat Message Store）
@@ -567,40 +571,40 @@ ai:
 ai:
     message_store:
         # Redis 消息存储
-        redis_store:
-            redis:
-                redis_client: snc_redis.default
-                ttl: 3600
+        redis:
+            my_store:
+                client: snc_redis.default
+                index_name: ai_messages
 
         # Doctrine DBAL 消息存储
-        db_store:
-            doctrine_dbal:
-                connection: doctrine.dbal.default_connection
-                table: ai_messages
+        doctrine:
+            dbal:
+                my_store:
+                    connection: doctrine.dbal.default_connection
+                    table_name: ai_messages
 
         # Session 消息存储（开发/测试用）
-        session_store:
-            session: ~
+        session:
+            my_session_store: ~
 
         # 内存消息存储（测试用）
-        memory_store:
-            in_memory: ~
+        memory:
+            test_store: ~
 ```
 
 ### 6.5 Chat 配置
 
-将平台和消息存储组合为完整的 Chat 服务：
+将 Agent 和消息存储组合为完整的 Chat 服务：
 
 ```yaml
 ai:
     chat:
         my_chat:
-            platform: ai.platform.open_ai
-            model: gpt-4o
-            message_store: ai.message_store.redis_store
+            agent: ai.agent.assistant
+            message_store: ai.message_store.redis.my_store
 ```
 
-> 💡 消息存储服务标记为 `ai.message_store` 标签，Chat 通过服务 ID 引用。
+> Chat 需要一个 Agent（包含平台和模型配置）和一个消息存储。通过服务 ID 引用已配置的 Agent 和 Message Store。
 
 ---
 
@@ -613,73 +617,62 @@ AI Bundle 提供多个命令行工具，方便开发调试。
 通过命令行与 Agent 进行交互式对话：
 
 ```bash
-# 调用指定 Agent
-php bin/console ai:agent:call --agent=assistant "请帮我分析这段代码的性能问题"
-
-# 流式输出
-php bin/console ai:agent:call --agent=assistant --stream "写一篇关于 Symfony 的文章"
+# 调用指定 Agent（agent 名称是位置参数）
+php bin/console ai:agent:call assistant
 ```
 
-> 📌 `ai:agent:call` 命令支持交互式模式，持续输入消息进行多轮对话，直到用户手动退出。
+> `ai:agent:call` 命令启动交互式模式，持续输入消息进行多轮对话，直到用户手动退出。
 
 ### 7.2 `ai:platform:invoke` —— 直接调用平台
 
 绕过 Agent 层，直接调用 AI 平台，适合底层调试：
 
 ```bash
-# 使用默认平台
-php bin/console ai:platform:invoke "Hello, World!"
+# 指定平台、模型和消息（均为位置参数）
+php bin/console ai:platform:invoke openai gpt-4o "Explain dependency injection"
 
-# 指定平台和模型
-php bin/console ai:platform:invoke \
-    --platform=ai.platform.open_ai \
-    --model=gpt-4o \
-    "Explain dependency injection"
-
-# 图像处理
-php bin/console ai:platform:invoke \
-    --image=path/to/image.jpg \
-    "What's in this image?"
+# 使用 Anthropic
+php bin/console ai:platform:invoke anthropic claude-sonnet-4-20250514 "Hello, World!"
 ```
 
 ### 7.3 Store 相关命令
 
 ```bash
 # 初始化向量存储（创建集合/表/索引）
-php bin/console ai:store:setup --store=qdrant_store
+php bin/console ai:store:setup qdrant.my_store
 
 # 索引文档到向量存储
-php bin/console ai:store:index --store=qdrant_store
+php bin/console ai:store:index my_indexer
 
-# 从向量存储检索
-php bin/console ai:store:retrieve --store=qdrant_store "Symfony 依赖注入"
+# 从向量存储检索（使用 retriever 名称）
+php bin/console ai:store:retrieve my_retriever "Symfony 依赖注入"
 
 # 删除向量存储
-php bin/console ai:store:drop --store=qdrant_store
+php bin/console ai:store:drop qdrant.my_store
 ```
 
 ### 7.4 Message Store 相关命令
 
 ```bash
 # 初始化消息存储
-php bin/console ai:message-store:setup --store=db_store
+php bin/console ai:message-store:setup doctrine.dbal.my_store
 
 # 删除消息存储
-php bin/console ai:message-store:drop --store=db_store
+php bin/console ai:message-store:drop doctrine.dbal.my_store
 ```
 
 ### 7.5 命令速查表
 
-| 命令 | 说明 | 关键参数 |
+| 命令 | 说明 | 参数 |
 |------|------|---------|
-| `ai:agent:call` | 交互式 Agent 对话 | `--agent`、`--stream` |
-| `ai:platform:invoke` | 单次平台调用 | `--platform`、`--model`、`--image` |
-| `ai:store:setup` | 初始化向量存储 | `--store` |
-| `ai:store:drop` | 删除向量存储 | `--store` |
-| `ai:store:index` | 索引文档 | `--store` |
-| `ai:store:retrieve` | 检索文档 | `--store` |
-| `ai:message-store:setup` | 初始化消息存储 | `--store` |
-| `ai:message-store:drop` | 删除消息存储 | `--store` |
+| `ai:agent:call` | 交互式 Agent 对话 | `<agent>` |
+| `ai:platform:invoke` | 单次平台调用 | `<platform> <model> <message>` |
+| `ai:store:setup` | 初始化向量存储 | `<store>` |
+| `ai:store:drop` | 删除向量存储 | `<store>` |
+| `ai:store:index` | 索引文档 | `<indexer>` |
+| `ai:store:retrieve` | 检索文档 | `<retriever> [query]` |
+| `ai:message-store:setup` | 初始化消息存储 | `<store>` |
+| `ai:message-store:drop` | 删除消息存储 | `<store>` |
 
 ---
 
@@ -691,7 +684,7 @@ AI Bundle 提供了完整的 Symfony Web Profiler 集成，在开发环境下自
 
 在 `kernel.debug = true`（开发环境）时，`DebugCompilerPass` 自动为所有 AI 服务添加 Traceable 装饰器：
 
-```
+```php
 HTTP 请求
     ↓
 Traceable* 装饰器记录调用数据（模型、输入、输出、耗时）
@@ -719,10 +712,10 @@ Web Profiler 渲染 AI 面板
 1. 在 Symfony 调试工具栏中点击 **AI** 图标
 2. 或访问 `/_profiler/latest` → 点击 **AI** 标签页
 3. 可以查看：
-   - 所有平台 API 调用的详细信息（模型、Token 用量、耗时）
-   - Agent 的完整执行链（输入 → 工具调用 → 输出）
-   - 工具调用记录（参数和返回值）
-   - 消息存储的读写操作
+ - 所有平台 API 调用的详细信息（模型、Token 用量、耗时）
+ - Agent 的完整执行链（输入 → 工具调用 → 输出）
+ - 工具调用记录（参数和返回值）
+ - 消息存储的读写操作
 
 ### 8.4 TraceablePlatform 示例
 
@@ -757,18 +750,18 @@ final class TraceablePlatform implements PlatformInterface
 }
 ```
 
-> 💡 装饰器使用 `setDecoratedService` 模式，优先级设为 `-1024`，确保在最外层包装。对业务代码**完全无侵入**。
+> 装饰器使用 `setDecoratedService` 模式，优先级设为 `-1024`，确保在最外层包装。对业务代码**完全无侵入**。
 
 ### 8.5 生产环境行为
 
-```
+```text
 kernel.debug: false（生产环境）
   └── DebugCompilerPass 检测到非 debug 模式 → 直接返回
   └── 所有 AI 服务为原始实现 → 零性能开销
   └── Web Profiler 无 AI 面板
 ```
 
-> ⚠️ Traceable 装饰器**仅在开发环境**启用。生产环境不会有任何性能影响。
+> Traceable 装饰器**仅在开发环境**启用。生产环境不会有任何性能影响。
 
 ---
 
@@ -860,7 +853,7 @@ class HrTools
 
 `IsGrantedToolAttributeListener` 监听 `ToolCallArgumentsResolved` 事件：
 
-```
+```php
 AI 决定调用工具
     ↓
 参数解析完成 → 触发 ToolCallArgumentsResolved 事件
@@ -872,7 +865,7 @@ IsGrantedToolAttributeListener 检查 #[IsGrantedTool] 属性
     └── 权限拒绝 → 抛出 AccessDeniedException → AI 收到错误消息
 ```
 
-> 📌 `#[IsGrantedTool]` 与 Symfony 的 `#[IsGranted]` 路由注解原理完全一致，只是作用于 AI 工具调用而非 HTTP 请求。支持所有标准 Voter，包括 `RoleVoter`、`ExpressionVoter` 和自定义 Voter。
+> `#[IsGrantedTool]` 与 Symfony 的 `#[IsGranted]` 路由注解原理完全一致，只是作用于 AI 工具调用而非 HTTP 请求。支持所有标准 Voter，包括 `RoleVoter`、`ExpressionVoter` 和自定义 Voter。
 
 ### 9.5 自定义 Voter 示例
 
@@ -994,7 +987,7 @@ final class ProcessorCompilerPass implements CompilerPassInterface
 }
 ```
 
-> 💡 `ProcessorCompilerPass` 支持两种模式：全局处理器（对所有 Agent 生效）和针对特定 Agent 的处理器（通过 `agent` 标签属性指定）。
+> `ProcessorCompilerPass` 支持两种模式：全局处理器（对所有 Agent 生效）和针对特定 Agent 的处理器（通过 `agent` 标签属性指定）。
 
 ---
 
@@ -1009,25 +1002,27 @@ ai:
     # 平台配置
     # ========================================
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
 
         ollama:
-            url: 'http://localhost:11434'
+            endpoint: 'http://localhost:11434'
 
         # 缓存平台（对 OpenAI 请求缓存）
         cache:
-            platform: open_ai
-            cache_pool: cache.app
+            openai_cached:
+                platform: ai.platform.openai
 
         # 故障转移平台
         failover:
-            platforms:
-                - open_ai
-                - anthropic
+            main:
+                platforms:
+                    - ai.platform.openai
+                    - ai.platform.anthropic
+                rate_limiter: limiter.failover
 
     # ========================================
     # Agent 配置
@@ -1035,9 +1030,9 @@ ai:
     agent:
         # 通用对话助手
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
-            system_prompt: |
+            prompt: |
                 You are a helpful assistant.
                 Answer questions concisely and accurately.
             tools:
@@ -1049,49 +1044,48 @@ ai:
         code_reviewer:
             platform: ai.platform.anthropic
             model: claude-sonnet-4-20250514
-            system_prompt: 'You are an expert PHP code reviewer.'
+            prompt: 'You are an expert PHP code reviewer.'
 
     # ========================================
     # 向量存储配置
     # ========================================
     store:
-        main_store:
-            qdrant:
-                host: '%env(QDRANT_HOST)%'
-                port: 6333
-                collection: documents
+        qdrant:
+            main_store:
+                endpoint: '%env(QDRANT_ENDPOINT)%'
+                collection_name: documents
 
     # ========================================
     # 索引器配置
     # ========================================
     indexer:
         document_indexer:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: text-embedding-3-small
-            store: ai.store.main_store
+            store: ai.store.qdrant.main_store
 
     # ========================================
     # 消息存储配置
     # ========================================
     message_store:
-        default:
-            redis:
-                redis_client: snc_redis.default
-                ttl: 7200
+        redis:
+            default:
+                client: snc_redis.default
+                index_name: ai_messages
 
-        persistent:
-            doctrine_dbal:
-                connection: doctrine.dbal.default_connection
-                table: ai_chat_messages
+        doctrine:
+            dbal:
+                persistent:
+                    connection: doctrine.dbal.default_connection
+                    table_name: ai_chat_messages
 
     # ========================================
     # Chat 配置
     # ========================================
     chat:
         main:
-            platform: ai.platform.open_ai
-            model: gpt-4o
-            message_store: ai.message_store.default
+            agent: ai.agent.assistant
+            message_store: ai.message_store.redis.default
 ```
 
 ### 11.2 环境变量
@@ -1202,7 +1196,7 @@ services:
         # 实现 InputProcessorInterface 的类自动获得 ai.agent.input_processor 标签
 ```
 
-> 📌 由于 Symfony 的 `autoconfigure` 特性，标记了 `#[AsTool]` 的工具类和实现了处理器接口的类会被**自动发现和注入**，无需手动声明 tags。
+> 由于 Symfony 的 `autoconfigure` 特性，标记了 `#[AsTool]` 的工具类和实现了处理器接口的类会被**自动发现和注入**，无需手动声明 tags。
 
 ---
 

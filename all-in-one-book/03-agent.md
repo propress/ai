@@ -74,7 +74,7 @@ flowchart TD
 
 以用户问「现在几点了？」为例，Agent 内部执行如下：
 
-```
+```php
 Agent::call($messages, $options)
     │
     ├─ 1. 创建 Input(model, messageBag, options)
@@ -442,7 +442,7 @@ final class Toolbox implements ToolboxInterface
 
 工具执行的完整流程：
 
-```
+```php
 Toolbox::execute(ToolCall $toolCall)
     │
     ├─ 1. 根据 toolCall.name 查找工具元数据
@@ -942,7 +942,7 @@ $staticMemory = new StaticMemoryProvider(
 
 注入后的系统提示会包含如下内容：
 
-```
+```text
 ## Static Memory
 
 - 公司名称：Acme Corp
@@ -963,7 +963,6 @@ $embeddingMemory = new EmbeddingProvider(
     platform: $platform,                         // 用于生成嵌入向量
     model: new Model('text-embedding-3-small'),  // 嵌入模型
     vectorStore: $pineconeStore,                  // 向量存储（来自 Store 组件）
-    maxResults: 5,                                // 最多返回 5 条相关记忆
 );
 ```
 
@@ -984,7 +983,7 @@ $embeddingMemory = new EmbeddingProvider(
 use Symfony\AI\Agent\Memory\MemoryInputProcessor;
 
 $memoryProcessor = new MemoryInputProcessor(
-    providers: [
+    memoryProviders: [
         $staticMemory,      // 固定知识
         $embeddingMemory,   // 动态检索
     ],
@@ -1121,7 +1120,7 @@ final class Handoff
 
 ### 8.4 路由决策流程
 
-```
+```php
 MultiAgent::call($messages)
     │
     ├── 1. 提取用户消息文本

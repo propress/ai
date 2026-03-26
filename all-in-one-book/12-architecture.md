@@ -1,6 +1,6 @@
 # 第 12 章：高级架构与最佳实践
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 系统性地掌握 Symfony AI 应用的架构设计原则和生产环境最佳实践：包括核心设计模式分析、完整的异常层次体系、处理器管线扩展点、安全防护策略、性能优化矩阵、可观测性方案、测试策略和部署方案。
 
@@ -12,7 +12,7 @@
 
 Symfony AI 的核心架构思想是**Bridge 模式**——将业务逻辑与具体 AI 平台实现完全分离。这个设计让你可以在不修改任何业务代码的情况下切换 AI 平台。
 
-```
+```text
 Bridge 模式的层次结构
 ═══════════════════
 
@@ -33,7 +33,7 @@ Bridge 模式的层次结构
 
 **每个 Bridge 的内部结构**：
 
-```
+```text
 一个 Bridge 由两个核心接口的实现组成
 ═══════════════════════════════════
 
@@ -79,7 +79,7 @@ class ProductService
 
 缓存、容灾、日志、限速等横切关注点通过装饰器模式层层叠加。每个装饰器都实现 `PlatformInterface`，对调用方完全透明：
 
-```
+```text
 装饰器叠加示意（从外到内）
 ═══════════════════════
 
@@ -106,24 +106,25 @@ class ProductService
 # 通过 AI Bundle YAML 配置装饰器链
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
-            type: failover
-            platforms: [ai.platform.open_ai, ai.platform.anthropic]
-        production:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
+            main:
+                platforms: [ai.platform.openai, ai.platform.anthropic]
+                rate_limiter: limiter.failover
+        cache:
+            production:
+                platform: ai.platform.failover.main
+                service: cache.ai
 ```
 
 ### 1.3 处理器管线：Agent 的扩展点
 
 Agent 的处理器管线是一个灵活的拦截器链，让你在 AI 调用前后插入自定义逻辑：
 
-```
+```php
 Agent::call() 的完整处理器管线
 ══════════════════════════════
 
@@ -215,7 +216,7 @@ class LoggingProcessor implements InputProcessorInterface, OutputProcessorInterf
 
 ### 2.1 Platform 异常
 
-```
+```text
 Symfony\AI\Platform\Exception\
 ├── ExceptionInterface (marker)
 │
@@ -255,7 +256,7 @@ Symfony\AI\Platform\Exception\
 
 ### 2.2 Agent 异常
 
-```
+```text
 Symfony\AI\Agent\Exception\
 ├── ExceptionInterface (marker)
 │
@@ -346,7 +347,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'  # 通过环境变量注入
 ```
 
@@ -356,7 +357,7 @@ ai:
 .env.*.local
 ```
 
-> ⚠️ **绝对不要**将 API Key 硬编码在代码中或提交到版本控制系统。使用 Symfony Secrets 或环境变量管理。
+> **绝对不要**将 API Key 硬编码在代码中或提交到版本控制系统。使用 Symfony Secrets 或环境变量管理。
 
 ### 3.2 工具安全——输入验证
 
@@ -411,7 +412,7 @@ class DatabaseQueryTool
 ### 3.3 工具权限控制（AI Bundle）
 
 ```php
-use Symfony\AI\AiBundle\Attribute\IsGrantedTool;
+use Symfony\AI\AiBundle\Security\Attribute\IsGrantedTool;
 
 // 只有管理员才能使用的危险工具
 #[AsTool(name: 'delete_record', description: '删除数据库记录')]
@@ -481,14 +482,14 @@ security:
 
 | 优化维度 | 策略 | 效果 | 实现难度 |
 |---------|------|------|:-------:|
-| **延迟** | 流式响应 | 首字节 200ms vs 3-10s | ⭐ |
-| **延迟** | 小模型处理简单任务 | 响应快 2-3 倍 | ⭐ |
-| **成本** | CachePlatform | 重复请求零成本 | ⭐⭐ |
-| **成本** | mini 模型（GPT-4o-mini） | 成本降 80-90% | ⭐ |
-| **成本** | 精简 System Prompt | 减少 30-50% Token | ⭐ |
-| **可用性** | FailoverPlatform | 消除单点故障 | ⭐⭐ |
-| **质量** | HybridQuery 混合检索 | 检索精度提升 20-30% | ⭐⭐ |
-| **质量** | Reranker 重排序 | Top-5 精度提升 15-25% | ⭐⭐⭐ |
+| **延迟** | 流式响应 | 首字节 200ms vs 3-10s | |
+| **延迟** | 小模型处理简单任务 | 响应快 2-3 倍 | |
+| **成本** | CachePlatform | 重复请求零成本 | |
+| **成本** | mini 模型（GPT-4o-mini） | 成本降 80-90% | |
+| **成本** | 精简 System Prompt | 减少 30-50% Token | |
+| **可用性** | FailoverPlatform | 消除单点故障 | |
+| **质量** | HybridQuery 混合检索 | 检索精度提升 20-30% | |
+| **质量** | Reranker 重排序 | Top-5 精度提升 15-25% | |
 
 ### 4.2 缓存策略
 
@@ -502,7 +503,7 @@ use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 // ❌ 需要最新信息的查询
 // ❌ 个性化回答（每次都不同）
 
-$platform = new CachePlatform($innerPlatform, $cache);
+$platform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 注意：必须提供 prompt_cache_key
 $response = $platform->invoke($model, $messages, [
@@ -515,12 +516,12 @@ $response = $platform->invoke($model, $messages, [
 
 | 任务类型 | 推荐模型 | 理由 | 成本/质量 |
 |---------|---------|------|:---------:|
-| 简单分类/标签 | GPT-4o-mini / Haiku | 任务简单，无需强模型 | 💰 / 🔧 |
-| 数据提取 | GPT-4o-mini | 结构化输出性价比高 | 💰 / 🔧🔧 |
-| 复杂推理/分析 | GPT-4o / Claude Sonnet | 推理能力强 | 💰💰💰 / 🔧🔧🔧 |
-| 代码生成 | GPT-4o / Claude Sonnet | 代码质量高 | 💰💰💰 / 🔧🔧🔧 |
-| Embedding | text-embedding-3-small | 专用模型，性价比高 | 💰 / 🔧🔧🔧 |
-| 本地部署 | Llama 3.1 / Mistral | 数据不出网 | 🆓 / 🔧🔧 |
+| 简单分类/标签 | GPT-4o-mini / Haiku | 任务简单，无需强模型 | 低 / |
+| 数据提取 | GPT-4o-mini | 结构化输出性价比高 | 低 / |
+| 复杂推理/分析 | GPT-4o / Claude Sonnet | 推理能力强 | 高 / |
+| 代码生成 | GPT-4o / Claude Sonnet | 代码质量高 | 高 / |
+| Embedding | text-embedding-3-small | 专用模型，性价比高 | 低 / |
+| 本地部署 | Llama 3.1 / Mistral | 数据不出网 | / |
 
 ### 4.4 Token 优化
 
@@ -549,13 +550,12 @@ $response = $platform->invoke($model, $messages, [
 ```php
 // 分块大小直接影响 RAG 质量
 $splitter = new TextSplitTransformer(
-    maxLength: 500,     // 太大：检索噪声大；太小：缺少上下文
+    chunkSize: 500,     // 太大：检索噪声大；太小：缺少上下文
     overlap: 50,        // 重叠确保块间上下文连贯
-    separator: "\n\n",  // 按段落分割，保持语义完整
 );
 
 // 检索数量的权衡
-$results = $store->query(new VectorQuery($vector, limit: 5));
+$results = $store->query(new VectorQuery($vector), ['limit' => 5]);
 // limit 太大：噪声干扰 AI 回答质量
 // limit 太小：可能遗漏相关内容
 // 推荐：3-7 个结果
@@ -813,8 +813,8 @@ class KnowledgeBaseTest extends TestCase
         $store = new InMemoryStore();
         $store->add($this->createTestDocuments());
 
-        $retriever = new SimilaritySearchRetriever($store, $mockVectorizer);
-        $results = $retriever->search('退货政策');
+        $retriever = new Retriever($store, $mockVectorizer);
+        $results = iterator_to_array($retriever->retrieve('退货政策'));
 
         $this->assertNotEmpty($results);
         $this->assertStringContainsString('退货', $results[0]->getContent());
@@ -836,7 +836,7 @@ when@dev:
     ai:
         platform:
             ollama:
-                type: ollama
+                endpoint: 'http://localhost:11434'
 
 # 测试环境——使用 Mock
 when@test:
@@ -848,10 +848,10 @@ when@test:
 when@prod:
     ai:
         platform:
-            production:
-                type: cache
-                platform: ai.platform.failover
-                cache_pool: cache.ai
+            cache:
+                production:
+                    platform: ai.platform.failover.main
+                    service: cache.ai
 ```
 
 ### 7.2 成本控制
@@ -865,7 +865,7 @@ $model = match ($taskComplexity) {
 };
 
 // 策略 2：缓存高频请求
-$platform = new CachePlatform($innerPlatform, $cache);
+$platform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 策略 3：预算告警
 if ($this->getMonthlySpend() > $this->getBudget() * 0.8) {

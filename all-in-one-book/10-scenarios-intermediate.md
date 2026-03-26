@@ -1,6 +1,6 @@
 # 第 10 章：实战场景（进阶篇）
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 通过 5 个进阶实战场景，掌握 Agent 工具调用循环的内部机制、RAG 知识库检索管线、多智能体协作编排、联网搜索集成以及记忆系统架构，构建能够自主完成复杂任务的 AI 应用。
 
@@ -18,11 +18,11 @@
 
 | 场景 | 核心组件 | 难度 | 典型应用 |
 |------|---------|------|---------|
-| 工具增强型 AI 助手 | Agent + Toolbox | ⭐⭐⭐ | 企业内部助手 |
-| RAG 知识库问答 | Store + Agent | ⭐⭐⭐ | 文档问答 |
-| 多智能体客服路由 | Orchestrator + Handoff | ⭐⭐⭐⭐ | 多部门客服 |
-| 联网搜索研究助手 | Agent + 搜索工具 | ⭐⭐⭐ | 市场研究 |
-| 带记忆的个性化助手 | Agent + Memory | ⭐⭐⭐ | 个人助手 |
+| 工具增强型 AI 助手 | Agent + Toolbox | | 企业内部助手 |
+| RAG 知识库问答 | Store + Agent | | 文档问答 |
+| 多智能体客服路由 | Orchestrator + Handoff | | 多部门客服 |
+| 联网搜索研究助手 | Agent + 搜索工具 | | 市场研究 |
+| 带记忆的个性化助手 | Agent + Memory | | 个人助手 |
 
 ---
 
@@ -38,7 +38,7 @@
 
 Agent 的核心机制是**工具调用循环（Tool Call Loop）**。理解这个循环是掌握所有 Agent 场景的关键：
 
-```
+```php
 Agent::call($messages) 的内部流程
 ═══════════════════════════════
 
@@ -83,7 +83,7 @@ Agent::call($messages) 的内部流程
   安全机制：默认最多循环 10 次（MaxIterationsExceededException）
 ```
 
-> 📝 **知识扩展：AgentProcessor 的双重角色**
+> **知识扩展：AgentProcessor 的双重角色**
 >
 > `AgentProcessor` 同时实现了 `InputProcessorInterface` 和 `OutputProcessorInterface`：
 > - 作为 InputProcessor：在消息发送给 LLM 前，将 Toolbox 中所有工具的 JSON Schema 注入 `options['tools']`
@@ -137,7 +137,7 @@ class ServerStatusTool
 }
 ```
 
-> 📝 **知识扩展：工具参数的自动发现**
+> **知识扩展：工具参数的自动发现**
 >
 > `ReflectionToolFactory` 通过 PHP 反射自动分析 `__invoke()` 方法的参数：
 > - 参数名 → 工具调用参数名（如 `$hostname`）
@@ -188,7 +188,7 @@ echo $response->getContent();
 
 Toolbox 在执行工具时会分发一系列事件，你可以通过监听这些事件实现审计、限流、Mock 等功能：
 
-```
+```php
 Toolbox::execute() 的事件流
 ═══════════════════════════
 
@@ -306,7 +306,7 @@ ai:
         ops_assistant:
             platform: ai.platform.gemini
             model: gemini-2.0-flash
-            system: '你是运维助手'
+            prompt: '你是运维助手'
             # 无需手动配置工具——所有 #[AsTool] 类自动注册
 ```
 
@@ -322,7 +322,7 @@ ai:
 
 ### 3.2 架构概述——RAG 两阶段管线
 
-```
+```text
 RAG 的完整生命周期
 ═════════════════
 
@@ -384,9 +384,8 @@ $documents = $markdownLoader->load('/path/to/docs');
 $transformer = new ChainTransformer([
     new TextTrimTransformer(),           // 去除多余空白
     new TextSplitTransformer(
-        maxLength: 500,                   // 每块最大字符数
+        chunkSize: 500,                   // 每块最大字符数
         overlap: 50,                      // 块间重叠字符数（保证上下文连贯）
-        separator: "\n\n",                // 优先在段落边界分割
     ),
 ]);
 $chunks = $transformer->transform($documents);
@@ -402,9 +401,9 @@ $store->add($chunks);
 echo sprintf("已索引 %d 个文档块\n", count($chunks));
 ```
 
-> 📝 **知识扩展：分块策略的选择**
+> **知识扩展：分块策略的选择**
 >
-> 分块大小（`maxLength`）和重叠（`overlap`）直接影响 RAG 质量：
+> 分块大小（`chunkSize`）和重叠（`overlap`）直接影响 RAG 质量：
 >
 > | 参数组合 | 效果 | 适用场景 |
 > |---------|------|---------|
@@ -430,16 +429,16 @@ echo sprintf("已索引 %d 个文档块\n", count($chunks));
 ### 3.6 查询阶段：检索增强生成
 
 ```php
-use Symfony\AI\Store\Retriever\SimilaritySearchRetriever;
+use Symfony\AI\Agent\Bridge\SimilaritySearch\SimilaritySearch;
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
 
-// 1. 创建检索器
-$retriever = new SimilaritySearchRetriever($store, $vectorizer);
+// 1. 创建检索工具
+$similaritySearch = new SimilaritySearch($vectorizer, $store);
 
 // 2. 作为工具集成到 Agent
 $toolbox = new Toolbox([
-    $retriever,  // 自动注册为 similarity_search 工具
+    $similaritySearch,  // 自动注册为 similarity_search 工具
 ]);
 
 $agentProcessor = new AgentProcessor($toolbox);
@@ -476,30 +475,30 @@ use Symfony\AI\Store\Query\HybridQuery;
 // 策略 1：纯向量检索——基于语义相似度
 // 优势：理解同义词和语义（"退货"能匹配"退款流程"）
 // 劣势：精确关键词可能不准
-$results = $store->query(new VectorQuery($queryVector, limit: 5));
+$results = $store->query(new VectorQuery($queryVector), ['limit' => 5]);
 
 // 策略 2：纯文本检索——基于关键词全文搜索
 // 优势：精确关键词匹配
 // 劣势：无法理解语义
-$results = $store->query(new TextQuery('退货政策', limit: 5));
+$results = $store->query(new TextQuery('退货政策'), ['limit' => 5]);
 
 // 策略 3：混合检索（推荐）——结合向量 + 文本
 // 同时利用语义理解和关键词匹配，效果最好
 $results = $store->query(new HybridQuery(
     vector: $queryVector,
     text: '退货政策',
-    limit: 5,
-));
+), ['limit' => 5]);
 ```
 
-> 📝 **知识扩展：PostgreSQL pgvector 的查询选项**
+> **知识扩展：PostgreSQL pgvector 的查询选项**
 >
 > Postgres Store 支持丰富的查询选项：
 > ```php
-> $results = $store->query(new VectorQuery($vector, limit: 10), [
->     'where' => 'metadata->>\'category\' = :category',  // SQL 条件过滤
+> $results = $store->query(new VectorQuery($vector), [
+>     'limit' => 10,
+>     'where' => 'metadata->>\'category\' = :category', // SQL 条件过滤
 >     'params' => ['category' => '退货政策'],
->     'maxScore' => 0.8,   // 最大距离阈值（过滤低相关结果）
+>     'maxScore' => 0.8, // 最大距离阈值（过滤低相关结果）
 > ]);
 > ```
 > 通过 `where` 子句，你可以在向量搜索前先用元数据过滤——这在多分类知识库中特别有用。
@@ -512,12 +511,12 @@ $results = $store->query(new HybridQuery(
 use Symfony\AI\Store\Reranker\Reranker;
 
 // 初始检索（召回更多候选）
-$candidates = $store->query(new VectorQuery($vector, limit: 20));
+$candidates = $store->query(new VectorQuery($vector), ['limit' => 20]);
 
 // 使用 Reranker 精排——需要支持重排序的模型
 // 模型名可包含 ?task=text-ranking 参数
 $reranker = new Reranker($platform, 'voyage-rerank-2?task=text-ranking');
-$ranked = $reranker->rerank($query, $candidates, limit: 5);
+$ranked = $reranker->rerank($query, $candidates, topK: 5);
 ```
 
 ---
@@ -532,7 +531,7 @@ $ranked = $reranker->rerank($query, $candidates, limit: 5);
 
 ### 4.2 架构概述——Orchestrator 决策机制
 
-```
+```text
 多智能体路由的内部流程
 ══════════════════════
 
@@ -681,13 +680,13 @@ $response = $multiAgent->call(new MessageBag(
 ai:
     agent:
         tech_support:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
-            system: '你是技术支持专家...'
+            prompt: '你是技术支持专家...'
         billing_support:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
-            system: '你是账单客服专家...'
+            prompt: '你是账单客服专家...'
         # Orchestrator 需要在服务配置中手动组装
 ```
 
@@ -743,13 +742,15 @@ composer require symfony/ai-platform symfony/ai-anthropic-platform \
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
-use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
+use Symfony\AI\Agent\Bridge\Tavily\Tavily;
+use Symfony\AI\Agent\Bridge\Wikipedia\Wikipedia;
+use Symfony\Component\HttpClient\HttpClient;
 
 // 创建搜索工具箱
+$httpClient = HttpClient::create();
 $toolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),
-    new WikipediaTool(),
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),
+    new Wikipedia($httpClient),
 ]);
 
 $agentProcessor = new AgentProcessor($toolbox);
@@ -798,10 +799,11 @@ foreach ($sources as $source) {
 
 ```php
 // 组合多种搜索工具——AI 自动选择最合适的
+$httpClient = HttpClient::create();
 $toolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),   // 通用 Web 搜索
-    new WikipediaTool(),                              // 知识/概念查询
-    new FirecrawlTool($_ENV['FIRECRAWL_API_KEY']),   // 深度页面爬取
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),   // 通用 Web 搜索
+    new Wikipedia($httpClient),                          // 知识/概念查询
+    new FirecrawlTool($_ENV['FIRECRAWL_API_KEY']),       // 深度页面爬取
 ]);
 
 // AI 会根据问题类型自动选择工具：
@@ -822,7 +824,7 @@ $toolbox = new Toolbox([
 
 ### 6.2 架构概述——记忆注入机制
 
-```
+```php
 Memory 系统的完整架构
 ═══════════════════
 

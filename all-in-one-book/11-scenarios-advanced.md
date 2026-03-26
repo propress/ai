@@ -1,6 +1,6 @@
 # 第 11 章：实战场景（高级篇）
 
-## 🎯 本章学习目标
+## 本章学习目标
 
 通过 5 个高级实战场景，深入理解生产环境关键技术：FailoverPlatform 和 CachePlatform 的内部机制、本地模型私有化部署、内容审核流水线、CrewAI 风格多智能体团队协作、以及端到端企业知识库系统的完整实现。
 
@@ -22,11 +22,11 @@
 
 | 场景 | 核心技术 | 难度 | 典型应用 |
 |------|---------|------|---------|
-| 高可用 AI 服务架构 | FailoverPlatform + CachePlatform | ⭐⭐⭐⭐ | 所有生产级应用 |
-| 本地模型私有化部署 | Ollama Bridge | ⭐⭐⭐ | 数据敏感场景 |
-| 内容审核流水线 | StructuredOutput + Agent | ⭐⭐⭐ | UGC 平台 |
-| CrewAI 风格多智能体团队 | MultiAgent + 流水线 | ⭐⭐⭐⭐ | 内容生产 |
-| 端到端企业知识库 | 全组件集成 | ⭐⭐⭐⭐⭐ | 企业级系统 |
+| 高可用 AI 服务架构 | FailoverPlatform + CachePlatform | | 所有生产级应用 |
+| 本地模型私有化部署 | Ollama Bridge | | 数据敏感场景 |
+| 内容审核流水线 | StructuredOutput + Agent | | UGC 平台 |
+| CrewAI 风格多智能体团队 | MultiAgent + 流水线 | | 内容生产 |
+| 端到端企业知识库 | 全组件集成 | | 企业级系统 |
 
 ---
 
@@ -40,7 +40,7 @@
 
 ### 2.2 架构概述——三层防御
 
-```
+```text
 高可用架构的三层防御
 ══════════════════
 
@@ -89,14 +89,14 @@ use Symfony\AI\Platform\Bridge\Anthropic\PlatformFactory as AnthropicFactory;
 $openai = OpenAiFactory::create($_ENV['OPENAI_API_KEY']);
 $anthropic = AnthropicFactory::create($_ENV['ANTHROPIC_API_KEY']);
 
-// 创建容灾平台——接受平台数组，按顺序尝试
-$platform = new FailoverPlatform([$openai, $anthropic]);
+// 创建容灾平台——接受平台数组和速率限制器，按顺序尝试
+$platform = new FailoverPlatform([$openai, $anthropic], $rateLimiterFactory);
 
 // 使用方式与单平台完全一致
 $response = $platform->invoke($model, $messages);
 ```
 
-> 📝 **知识扩展：FailoverPlatform 的内部行为**
+> **知识扩展：FailoverPlatform 的内部行为**
 >
 > FailoverPlatform 的核心是一个闭包驱动的重试循环：
 >
@@ -105,28 +105,28 @@ $response = $platform->invoke($model, $messages);
 > ═══════════════════════════════════
 >
 > for 每个 Platform in 列表:
->   │
->   ├─ 1. 检查速率限制器（RateLimiter）
->   │      如果该平台之前失败过，速率限制器控制多久后重试
->   │
->   ├─ 2. 检查失败记录（WeakMap<Platform, timestamp>）
->   │      如果该平台在 WeakMap 中有失败记录，且未通过速率限制器检查
->   │      → 跳过该平台，尝试下一个
->   │
->   ├─ 3. 尝试调用
->   │      try {
->   │          $result = $platform->invoke($model, $messages, $options);
->   │          // 成功：从失败记录中移除该平台
->   │          unset($failedPlatforms[$platform]);
->   │          return $result;
->   │      }
->   │
->   └─ 4. 失败处理
->          catch (\Throwable $e) {
->              // 记录失败：$failedPlatforms[$platform] = now
->              // 记录日志
->              // 继续尝试下一个平台
->          }
+> │
+> ├─ 1. 检查速率限制器（RateLimiter）
+> │ 如果该平台之前失败过，速率限制器控制多久后重试
+> │
+> ├─ 2. 检查失败记录（WeakMap<Platform, timestamp>）
+> │ 如果该平台在 WeakMap 中有失败记录，且未通过速率限制器检查
+> │ → 跳过该平台，尝试下一个
+> │
+> ├─ 3. 尝试调用
+> │ try {
+> │ $result = $platform->invoke($model, $messages, $options);
+> │ // 成功：从失败记录中移除该平台
+> │ unset($failedPlatforms[$platform]);
+> │ return $result;
+> │ }
+> │
+> └─ 4. 失败处理
+> catch (\Throwable $e) {
+> // 记录失败：$failedPlatforms[$platform] = now
+> // 记录日志
+> // 继续尝试下一个平台
+> }
 >
 > // 所有平台都失败 → throw RuntimeException
 > ```
@@ -141,12 +141,13 @@ $response = $platform->invoke($model, $messages);
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
-$cache = new RedisAdapter(/* Redis 连接 */);
+$cache = new TagAwareAdapter(new RedisAdapter(/* Redis 连接 */));
 
 $platform = new CachePlatform(
-    $innerPlatform,
-    $cache,
+    platform: $innerPlatform,
+    cache: $cache,
 );
 
 // 缓存调用——必须提供 prompt_cache_key
@@ -156,7 +157,7 @@ $response = $platform->invoke($model, $messages, [
 ]);
 ```
 
-> 📝 **知识扩展：CachePlatform 的缓存键构成**
+> **知识扩展：CachePlatform 的缓存键构成**
 >
 > CachePlatform 的缓存键由三部分组成：
 >
@@ -165,18 +166,18 @@ $response = $platform->invoke($model, $messages, [
 >
 > 输入哈希的计算规则：
 > - string 输入 → MD5($input)
-> - array 输入  → MD5(json_encode($input))
-> - MessageBag  → MessageBag::getId()->toString()  ← 注意！
+> - array 输入 → MD5(json_encode($input))
+> - MessageBag → MessageBag::getId()->toString() ← 注意！
 > ```
 >
 > **重要陷阱**：`MessageBag` 使用 UUID v7 作为 ID，每次 `new MessageBag()` 都会生成新 ID。这意味着：
 > ```php
-> // ❌ 这两个 MessageBag 内容相同，但 ID 不同——不会命中缓存！
+> // 这两个 MessageBag 内容相同，但 ID 不同——不会命中缓存！
 > $bag1 = new MessageBag(Message::ofUser('你好'));
 > $bag2 = new MessageBag(Message::ofUser('你好'));
 > // $bag1->getId() !== $bag2->getId()
 >
-> // ✅ 要实现内容缓存，需要复用同一个 MessageBag 实例
+> // 要实现内容缓存，需要复用同一个 MessageBag 实例
 > // 或者在缓存键中使用内容哈希而非 MessageBag ID
 > ```
 >
@@ -195,10 +196,10 @@ $openai = OpenAiFactory::create($_ENV['OPENAI_API_KEY']);
 $anthropic = AnthropicFactory::create($_ENV['ANTHROPIC_API_KEY']);
 
 // 第 2 步：容灾平台
-$failover = new FailoverPlatform([$openai, $anthropic]);
+$failover = new FailoverPlatform([$openai, $anthropic], $rateLimiterFactory);
 
 // 第 3 步：缓存平台（包装容灾平台）
-$platform = new CachePlatform($failover, $cache);
+$platform = new CachePlatform($failover, cache: $cache);
 
 // 请求的完整路径：
 // 1. CachePlatform 检查缓存 → 命中则直接返回（0 成本、<1ms）
@@ -214,21 +215,22 @@ $platform = new CachePlatform($failover, $cache);
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         # 容灾平台
         failover:
-            type: failover
-            platforms:
-                - ai.platform.open_ai
-                - ai.platform.anthropic
+            main:
+                platforms:
+                    - ai.platform.openai
+                    - ai.platform.anthropic
+                rate_limiter: limiter.failover
         # 缓存平台（包装容灾平台）
-        cached:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
+        cache:
+            cached:
+                platform: ai.platform.failover.main
+                service: cache.ai
 ```
 
 ### 2.7 成本分析
@@ -241,7 +243,7 @@ ai:
 | CachePlatform（70% 命中率） | 30,000 | ~$150 |
 | + 简单任务用 mini 模型 | 30,000 | ~$35 |
 
-> 💡 **经验值**：FAQ 类应用的缓存命中率通常可达 60-80%，API 成本降低效果显著。
+> **经验值**：FAQ 类应用的缓存命中率通常可达 60-80%，API 成本降低效果显著。
 
 ---
 
@@ -255,7 +257,7 @@ ai:
 
 ### 3.2 架构概述
 
-```
+```text
 本地模型部署架构
 ══════════════
 
@@ -308,11 +310,11 @@ $platform = PlatformFactory::create();
 
 // 使用本地模型——API 与云端模型完全一致
 $response = $platform->invoke(
-    $messages,
     'llama3.1',   // 模型名就是 ollama pull 时的名字
+    $messages,
 );
 
-echo $response->getContent();
+echo $response->asText();
 ```
 
 ### 3.5 本地 RAG——数据零泄漏
@@ -355,10 +357,13 @@ $platform = $this->isSensitiveData($input) ? $localPlatform : $cloudPlatform;
 
 // 策略 2：使用 FailoverPlatform，云端优先、本地兜底
 // 好处：即使云端 API 故障，服务也不中断
-$platform = new FailoverPlatform([
-    $cloudPlatform,    // 优先：质量好
-    $localPlatform,    // 兜底：永远可用（本地服务器不会宕机）
-]);
+$platform = new FailoverPlatform(
+    platforms: [
+        $cloudPlatform,    // 优先：质量好
+        $localPlatform,    // 兜底：永远可用（本地服务器不会宕机）
+    ],
+    rateLimiterFactory: $rateLimiterFactory,
+);
 ```
 
 ### 3.7 本地模型选型指南
@@ -384,7 +389,7 @@ $platform = new FailoverPlatform([
 
 ### 4.2 架构概述
 
-```
+```text
 内容审核流水线
 ══════════════
 
@@ -555,7 +560,7 @@ PROMPT;
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
 
-$cachedPlatform = new CachePlatform($innerPlatform, $cache);
+$cachedPlatform = new CachePlatform(platform: $innerPlatform, cache: $cache);
 
 // 自定义缓存键——基于内容哈希
 $moderator = new ContentModerationService($cachedPlatform);
@@ -631,7 +636,7 @@ class CommentController
 
 ### 5.2 架构概述
 
-```
+```text
 CrewAI 风格：多智能体顺序流水线
 ══════════════════════════════
 
@@ -675,13 +680,15 @@ CrewAI 风格：多智能体顺序流水线
 
 use Symfony\AI\Agent\Agent;
 use Symfony\AI\Agent\Toolbox\Toolbox;
-use Symfony\AI\Agent\Bridge\Tavily\TavilySearchTool;
-use Symfony\AI\Agent\Bridge\Wikipedia\WikipediaTool;
+use Symfony\AI\Agent\Bridge\Tavily\Tavily;
+use Symfony\AI\Agent\Bridge\Wikipedia\Wikipedia;
+use Symfony\Component\HttpClient\HttpClient;
 
 // 1. 研究员——负责收集信息
+$httpClient = HttpClient::create();
 $researchToolbox = new Toolbox([
-    new TavilySearchTool($_ENV['TAVILY_API_KEY']),
-    new WikipediaTool(),
+    new Tavily($httpClient, $_ENV['TAVILY_API_KEY']),
+    new Wikipedia($httpClient),
 ]);
 $researchProcessor = new AgentProcessor($researchToolbox);
 $researcher = new Agent($platform, $model,
@@ -800,7 +807,7 @@ for ($i = 0; $i < $maxIterations; $i++) {
 
 ### 6.2 完整架构
 
-```
+```text
 端到端企业知识库系统架构
 ══════════════════════
 
@@ -844,28 +851,24 @@ for ($i = 0; $i < $maxIterations; $i++) {
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
-            type: failover
-            platforms: [ai.platform.open_ai, ai.platform.anthropic]
-        cached:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
-
-    store:
-        knowledge_base:
-            platform: ai.platform.cached
-            store: ai.store.postgres
+            main:
+                platforms: [ai.platform.openai, ai.platform.anthropic]
+                rate_limiter: limiter.failover
+        cache:
+            cached:
+                platform: ai.platform.failover.main
+                service: cache.ai
 
     agent:
         knowledge_assistant:
-            platform: ai.platform.cached
+            platform: ai.platform.cache.cached
             model: gpt-4o
-            system: |
+            prompt: |
                 你是企业知识库助手。
 
                 行为准则：
@@ -915,9 +918,8 @@ class DocumentIndexService
         $transformer = new ChainTransformer([
             new TextTrimTransformer(),
             new TextSplitTransformer(
-                maxLength: 500,
+                chunkSize: 500,
                 overlap: 50,
-                separator: "\n\n",
             ),
         ]);
         $chunks = $transformer->transform($documents);
@@ -1055,15 +1057,15 @@ class KnowledgeBaseController
 
 | 检查项 | 状态 | 说明 |
 |--------|:----:|------|
-| FailoverPlatform 配置 | ☐ | 至少配置 2 个 AI 平台 |
-| CachePlatform 配置 | ☐ | 使用 Redis 缓存池 |
-| PostgreSQL pgvector 扩展 | ☐ | `CREATE EXTENSION vector;` |
-| Redis 连接 | ☐ | 对话历史 + 响应缓存 |
-| Nginx 流式配置 | ☐ | `proxy_buffering off;` |
-| API Key 环境变量 | ☐ | 不要硬编码 |
-| 日志和监控 | ☐ | Platform 事件监听 |
-| 错误处理 | ☐ | try/catch + 优雅降级 |
-| 文档定期重新索引 | ☐ | Cron / Symfony Messenger |
+| FailoverPlatform 配置 | [ ] | 至少配置 2 个 AI 平台 |
+| CachePlatform 配置 | [ ] | 使用 Redis 缓存池 |
+| PostgreSQL pgvector 扩展 | [ ] | `CREATE EXTENSION vector;` |
+| Redis 连接 | [ ] | 对话历史 + 响应缓存 |
+| Nginx 流式配置 | [ ] | `proxy_buffering off;` |
+| API Key 环境变量 | [ ] | 不要硬编码 |
+| 日志和监控 | [ ] | Platform 事件监听 |
+| 错误处理 | [ ] | try/catch + 优雅降级 |
+| 文档定期重新索引 | [ ] | Cron / Symfony Messenger |
 
 ---
 

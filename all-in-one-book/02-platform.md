@@ -107,7 +107,7 @@ interface ResultConverterInterface
 
 一个典型的 Bridge 目录结构：
 
-```
+```text
 Bridge/OpenAi/
 ├── PlatformFactory.php     # 工厂类，一行创建平台实例
 ├── ModelCatalog.php        # 该平台的模型目录（含能力定义）
@@ -124,7 +124,7 @@ Bridge/OpenAi/
 
 当你调用 `$platform->invoke('gpt-4o', $messageBag, $options)` 时，内部经历以下步骤：
 
-```
+```php
 应用代码
     │
     ▼
@@ -1470,8 +1470,8 @@ $gemini = GeminiFactory::create(
 // Ollama（本地模型，无需 API Key）
 use Symfony\AI\Platform\Bridge\Ollama\PlatformFactory as OllamaFactory;
 $ollama = OllamaFactory::create(
+    endpoint: 'http://localhost:11434',
     httpClient: HttpClient::create(),
-    url: 'http://localhost:11434',
 );
 
 // Mistral
@@ -1494,22 +1494,25 @@ $mistral = MistralFactory::create(
 
 ```php
 use Symfony\AI\Platform\Bridge\Cache\CachePlatform;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
-$cache = new FilesystemAdapter('ai_cache', 3600);
+$cache = new TagAwareAdapter(new FilesystemAdapter('ai_cache'));
 
 $cachedPlatform = new CachePlatform(
-    $actualPlatform,  // 被包装的真实平台
-    $cache,           // PSR-6 CacheItemPoolInterface
-    $serializer,      // Symfony Serializer
-    3600,             // TTL（秒）
+    platform: $actualPlatform,  // 被包装的真实平台
+    cache: $cache,              // TagAwareAdapterInterface & CacheInterface
 );
 
-// 第一次：发起 HTTP 请求
-$result1 = $cachedPlatform->invoke('gpt-4o', $messages)->asText();
+// 第一次：发起 HTTP 请求（需传入 prompt_cache_key 选项启用缓存）
+$result1 = $cachedPlatform->invoke('gpt-4o', $messages, [
+    'prompt_cache_key' => 'my_cache',
+])->asText();
 
 // 第二次：直接从缓存返回，不消耗 API 配额
-$result2 = $cachedPlatform->invoke('gpt-4o', $messages)->asText();
+$result2 = $cachedPlatform->invoke('gpt-4o', $messages, [
+    'prompt_cache_key' => 'my_cache',
+])->asText();
 ```
 
 > ⚠️ 缓存键基于模型名、输入内容和选项的组合生成。`stream => true` 的请求不会被缓存。
@@ -1520,12 +1523,22 @@ $result2 = $cachedPlatform->invoke('gpt-4o', $messages)->asText();
 
 ```php
 use Symfony\AI\Platform\Bridge\Failover\FailoverPlatform;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
+use Symfony\Component\RateLimiter\Storage\InMemoryStorage;
 
-$failoverPlatform = new FailoverPlatform([
-    $openAiPlatform,      // 首选：OpenAI
-    $anthropicPlatform,   // 备选 1：Anthropic
-    $ollamaPlatform,      // 备选 2：本地 Ollama
-]);
+$rateLimiterFactory = new RateLimiterFactory(
+    ['id' => 'failover', 'policy' => 'sliding_window', 'limit' => 10, 'interval' => '1 minute'],
+    new InMemoryStorage(),
+);
+
+$failoverPlatform = new FailoverPlatform(
+    platforms: [
+        $openAiPlatform,      // 首选：OpenAI
+        $anthropicPlatform,   // 备选 1：Anthropic
+        $ollamaPlatform,      // 备选 2：本地 Ollama
+    ],
+    rateLimiterFactory: $rateLimiterFactory,
+);
 
 // 如果 OpenAI 服务不可用，自动尝试 Anthropic
 // 如果 Anthropic 也不可用，自动尝试本地 Ollama
@@ -1536,11 +1549,14 @@ $result = $failoverPlatform->invoke('gpt-4o', $messages)->asText();
 
 ```php
 // 商业 API + 本地模型兜底
-$failoverPlatform = new FailoverPlatform([
-    $openAiPlatform,    // 高质量商业 API
-    $azurePlatform,     // Azure 独立部署（不受 OpenAI 限额影响）
-    $ollamaPlatform,    // 本地模型（100% 可用性兜底）
-]);
+$failoverPlatform = new FailoverPlatform(
+    platforms: [
+        $openAiPlatform,    // 高质量商业 API
+        $azurePlatform,     // Azure 独立部署（不受 OpenAI 限额影响）
+        $ollamaPlatform,    // 本地模型（100% 可用性兜底）
+    ],
+    rateLimiterFactory: $rateLimiterFactory,
+);
 ```
 
 ### 10.3 Template 模板渲染
@@ -1548,12 +1564,12 @@ $failoverPlatform = new FailoverPlatform([
 Platform 支持通过 `TemplateRendererInterface` 在消息中使用模板变量：
 
 ```php
-use Symfony\AI\Platform\Message\TemplateRenderer\Template;
+use Symfony\AI\Platform\Message\Template;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\MessageBag;
 
 // 定义模板化的系统消息
-$template = new Template(
+$template = Template::string(
     '你是一名精通 {{ language }} 的编程顾问，请用 {{ tone }} 的语气回答。',
 );
 
