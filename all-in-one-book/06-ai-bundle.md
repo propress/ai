@@ -257,16 +257,18 @@ ai:
 
         # 故障转移平台：依次尝试，全部失败才抛出异常
         failover:
-            platforms:
-                - openai       # 第一优先级
-                - anthropic     # 第二优先级
-                - gemini        # 第三优先级
+            main:
+                platforms:
+                    - ai.platform.openai       # 第一优先级
+                    - ai.platform.anthropic     # 第二优先级
+                    - ai.platform.gemini        # 第三优先级
+                rate_limiter: limiter.failover   # RateLimiter 服务 ID
 ```
 
 **行为逻辑**：
 
 ```text
-调用 ai.platform.failover
+调用 ai.platform.failover.main
   ├── 尝试 openai → 成功 → 返回结果
   ├── openai 失败 → 尝试 anthropic → 成功 → 返回结果
   ├── anthropic 失败 → 尝试 gemini → 成功 → 返回结果
@@ -287,8 +289,9 @@ ai:
 
         # 缓存平台：对 openai 的请求进行缓存
         cache:
-            platform: openai
-            cache_pool: cache.app
+            openai_cached:
+                platform: ai.platform.openai
+                service: cache.app          # 缓存池服务 ID（默认 cache.app）
 ```
 
 **行为**：相同的模型 + 相同的输入 → 直接从缓存返回，不消耗 Token，响应接近零延迟。
@@ -339,7 +342,7 @@ ai:
         assistant:
             platform: ai.platform.anthropic
             model: claude-sonnet-4-20250514
-            system_prompt: |
+            prompt: |
                 你是一个专业的 Symfony 开发助手。
                 回答问题时请给出代码示例。
             tools:
@@ -1010,14 +1013,16 @@ ai:
 
         # 缓存平台（对 OpenAI 请求缓存）
         cache:
-            platform: openai
-            cache_pool: cache.app
+            openai_cached:
+                platform: ai.platform.openai
 
         # 故障转移平台
         failover:
-            platforms:
-                - openai
-                - anthropic
+            main:
+                platforms:
+                    - ai.platform.openai
+                    - ai.platform.anthropic
+                rate_limiter: limiter.failover
 
     # ========================================
     # Agent 配置
@@ -1027,7 +1032,7 @@ ai:
         assistant:
             platform: ai.platform.openai
             model: gpt-4o
-            system_prompt: |
+            prompt: |
                 You are a helpful assistant.
                 Answer questions concisely and accurately.
             tools:
@@ -1039,17 +1044,16 @@ ai:
         code_reviewer:
             platform: ai.platform.anthropic
             model: claude-sonnet-4-20250514
-            system_prompt: 'You are an expert PHP code reviewer.'
+            prompt: 'You are an expert PHP code reviewer.'
 
     # ========================================
     # 向量存储配置
     # ========================================
     store:
-        main_store:
-            qdrant:
-                host: '%env(QDRANT_HOST)%'
-                port: 6333
-                collection: documents
+        qdrant:
+            main_store:
+                endpoint: '%env(QDRANT_ENDPOINT)%'
+                collection_name: documents
 
     # ========================================
     # 索引器配置
@@ -1058,30 +1062,30 @@ ai:
         document_indexer:
             platform: ai.platform.openai
             model: text-embedding-3-small
-            store: ai.store.main_store
+            store: ai.store.qdrant.main_store
 
     # ========================================
     # 消息存储配置
     # ========================================
     message_store:
-        default:
-            redis:
-                redis_client: snc_redis.default
-                ttl: 7200
+        redis:
+            default:
+                client: snc_redis.default
+                index_name: ai_messages
 
-        persistent:
-            doctrine_dbal:
-                connection: doctrine.dbal.default_connection
-                table: ai_chat_messages
+        doctrine:
+            dbal:
+                persistent:
+                    connection: doctrine.dbal.default_connection
+                    table_name: ai_chat_messages
 
     # ========================================
     # Chat 配置
     # ========================================
     chat:
         main:
-            platform: ai.platform.openai
-            model: gpt-4o
-            message_store: ai.message_store.default
+            agent: ai.agent.assistant
+            message_store: ai.message_store.redis.default
 ```
 
 ### 11.2 环境变量

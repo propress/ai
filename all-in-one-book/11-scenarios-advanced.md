@@ -221,15 +221,16 @@ ai:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         # 容灾平台
         failover:
-            type: failover
-            platforms:
-                - ai.platform.openai
-                - ai.platform.anthropic
+            main:
+                platforms:
+                    - ai.platform.openai
+                    - ai.platform.anthropic
+                rate_limiter: limiter.failover
         # 缓存平台（包装容灾平台）
-        cached:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
+        cache:
+            cached:
+                platform: ai.platform.failover.main
+                service: cache.ai
 ```
 
 ### 2.7 成本分析
@@ -855,23 +856,19 @@ ai:
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
-            type: failover
-            platforms: [ai.platform.openai, ai.platform.anthropic]
-        cached:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
-
-    store:
-        knowledge_base:
-            platform: ai.platform.cached
-            store: ai.store.postgres
+            main:
+                platforms: [ai.platform.openai, ai.platform.anthropic]
+                rate_limiter: limiter.failover
+        cache:
+            cached:
+                platform: ai.platform.failover.main
+                service: cache.ai
 
     agent:
         knowledge_assistant:
-            platform: ai.platform.cached
+            platform: ai.platform.cache.cached
             model: gpt-4o
-            system: |
+            prompt: |
                 你是企业知识库助手。
 
                 行为准则：

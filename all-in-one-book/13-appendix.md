@@ -324,7 +324,7 @@ ai:
         my_agent:
             platform: ai.platform.openai
             model: gpt-4o
-            system: '你是一个友好的助手。'
+            prompt: '你是一个友好的助手。'
 ```
 
 ### 7.2 MCP Bundle 配置

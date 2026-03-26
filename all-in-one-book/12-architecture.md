@@ -111,12 +111,13 @@ ai:
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
-            type: failover
-            platforms: [ai.platform.openai, ai.platform.anthropic]
-        production:
-            type: cache
-            platform: ai.platform.failover
-            cache_pool: cache.ai
+            main:
+                platforms: [ai.platform.openai, ai.platform.anthropic]
+                rate_limiter: limiter.failover
+        cache:
+            production:
+                platform: ai.platform.failover.main
+                service: cache.ai
 ```
 
 ### 1.3 处理器管线：Agent 的扩展点
