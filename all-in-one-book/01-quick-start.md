@@ -1,29 +1,29 @@
-# 1 
+# 第 1 章：快速入门
 
-## 
+## 🎯 本章学习目标
 
- Symfony AI 
-
----
-
-## 1. 
-
- [ 0 ](00-preface.md) Symfony AI 
-
-- **Platform** 33+ AI 
-- **Bridge **——
-- `PlatformFactory::create()` Platform 
-- `invoke()` `DeferredResult` `asText()` HTTP 
-
- "Hello AI" Platform 
+用最少的时间搭建开发环境，通过动手编写代码，掌握 Symfony AI 最核心的五项能力：文本对话、平台切换、流式响应、结构化输出和多模态输入。
 
 ---
 
-## 2. 
+## 1. 回顾
 
-### 2.1 PHP 8.4+ Composer
+在 [第 0 章：前言与导读](00-preface.md) 中，我们了解了 Symfony AI 的全貌：
 
-Symfony AI **PHP 8.4 **
+- **Platform** 是所有功能的基石，提供与 33+ AI 平台通信的统一接口
+- **Bridge 架构**将核心抽象与平台实现彻底分离——你的业务代码只依赖核心抽象
+- `PlatformFactory::create()` 一行代码即可创建完整配置的 Platform 实例
+- `invoke()` 返回 `DeferredResult`，调用 `asText()` 时才真正发送 HTTP 请求
+
+我们还运行了一个最简 "Hello AI" 程序。本章将在此基础上，深入探索 Platform 组件的核心用法。
+
+---
+
+## 2. 环境准备
+
+### 2.1 安装 PHP 8.4+ 和 Composer
+
+Symfony AI 要求 **PHP 8.4 或更高版本**。在终端中验证：
 
 ```bash
 # 检查 PHP 版本
@@ -34,9 +34,9 @@ php -v
 composer --version
 ```
 
-> PHP 8.4 [phpenv](https://github.com/phpenv/phpenv) PHP
+> ⚠️ 如果你的 PHP 版本低于 8.4，请先升级。推荐使用 [phpenv](https://github.com/phpenv/phpenv) 或系统包管理器来管理多版本 PHP。
 
-### 2.2 
+### 2.2 创建新项目
 
 ```bash
 # 创建项目目录
@@ -49,29 +49,29 @@ composer init --no-interaction
 composer require symfony/ai-platform symfony/ai-open-ai-platform
 ```
 
-> `symfony/ai-platform` `symfony/ai-open-ai-platform` OpenAI Composer 
+> 📌 `symfony/ai-platform` 是核心抽象层，`symfony/ai-open-ai-platform` 是 OpenAI 的桥接包。所有桥接包都是独立的 Composer 包，按需安装即可。
 
-### 2.3 API 
+### 2.3 设置 API 密钥
 
- `.env` 
+在项目根目录创建 `.env` 文件：
 
 ```bash
 # .env —— 不要将此文件提交到版本控制！
 OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
-
+然后在代码中加载环境变量。最简方式是直接在脚本中读取：
 
 ```php
 // 从环境变量或 .env 文件读取
 $apiKey = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY');
 ```
 
-> **** API `.env` `.gitignore` Secrets 
+> ⚠️ **安全提示**：永远不要将 API 密钥硬编码在源代码中。请将 `.env` 添加到 `.gitignore`。在生产环境中，使用服务器环境变量或 Secrets 管理工具。
 
-### 2.4 
+### 2.4 验证安装
 
- `verify.php` 
+创建 `verify.php` 文件，确认安装成功：
 
 ```php
 <?php
@@ -89,32 +89,32 @@ echo '📦 PlatformFactory 类：'.PlatformFactory::class.\PHP_EOL;
 php verify.php
 ```
 
- ` Symfony AI Platform `
+如果看到 `✅ Symfony AI Platform 安装成功！`，说明环境已就绪。
 
 ---
 
-## 3. AI 
+## 3. 第一个 AI 对话
 
- AI ——
+让我们完成一个完整的 AI 对话——从创建平台实例到获取文本回复。
 
-### 3.1 
+### 3.1 核心概念
 
-Symfony AI 
+Symfony AI 的对话流程只有四步：
 
 ```text
 创建 Platform ──▶ 构建消息 ──▶ 调用模型 ──▶ 消费结果
 ```
 
-| | / | |
+| 步骤 | 关键类/方法 | 说明 |
 |------|------------|------|
-| Platform | `PlatformFactory::create()` | AI |
-| | `Message::forSystem()` / `Message::ofUser()` | |
-| | `$platform->invoke($model, $messages)` | AI `DeferredResult` |
-| | `$result->asText()` | —— HTTP |
+| 创建 Platform | `PlatformFactory::create()` | 创建与 AI 平台通信的实例 |
+| 构建消息 | `Message::forSystem()` / `Message::ofUser()` | 用工厂方法构建不同角色的消息 |
+| 调用模型 | `$platform->invoke($model, $messages)` | 发起 AI 调用，返回 `DeferredResult` |
+| 消费结果 | `$result->asText()` | 延迟求值——此时才发送 HTTP 请求 |
 
-### 3.2 
+### 3.2 完整代码示例
 
- `chat.php`
+创建 `chat.php`：
 
 ```php
 <?php
@@ -141,13 +141,13 @@ $result = $platform->invoke('gpt-4o-mini', $messages);
 echo $result->asText().\PHP_EOL;
 ```
 
-
+运行：
 
 ```bash
 OPENAI_API_KEY=sk-your-key php chat.php
 ```
 
-
+你会看到类似以下输出：
 
 ```text
 Symfony AI 的核心组件包括：
@@ -158,9 +158,9 @@ Symfony AI 的核心组件包括：
 5. Mate — AI 开发助手，提供 MCP 开发服务器
 ```
 
-### 3.3 
+### 3.3 消息类型详解
 
-`Message` 
+`Message` 是一个工厂类，提供四种静态方法来创建不同角色的消息：
 
 ```php
 use Symfony\AI\Platform\Message\Message;
@@ -178,11 +178,11 @@ Message::ofAssistant('你好！有什么可以帮助你的吗？');
 Message::ofToolCall($toolCall, '执行结果');
 ```
 
-> `MessageBag` 
+> 💡 `MessageBag` 就是消息的容器，支持传入任意数量的消息。对话的顺序由传入顺序决定。
 
-### 3.4 
+### 3.4 调用选项
 
-`invoke()` 
+`invoke()` 的第三个参数支持传入额外选项：
 
 ```php
 $result = $platform->invoke('gpt-4o-mini', $messages, [
@@ -191,23 +191,23 @@ $result = $platform->invoke('gpt-4o-mini', $messages, [
 ]);
 ```
 
-> AI `temperature``max_output_tokens` 
+> 📌 可用选项取决于具体的 AI 平台和模型。常用选项包括 `temperature`、`max_output_tokens` 等。
 
 ---
 
-## 4. AI 
+## 4. 切换 AI 平台
 
-Symfony AI ****—— AI `use` 
+Symfony AI 最强大的设计之一就是 **统一接口**——切换 AI 平台只需修改两处：`use` 语句和模型名称。
 
-### 4.1 AnthropicClaude
+### 4.1 使用 Anthropic（Claude）
 
- Anthropic 
+首先安装 Anthropic 桥接包：
 
 ```bash
 composer require symfony/ai-anthropic-platform
 ```
 
- `chat-anthropic.php`
+创建 `chat-anthropic.php`：
 
 ```php
 <?php
@@ -238,15 +238,15 @@ echo $result->asText().\PHP_EOL;
 ANTHROPIC_API_KEY=sk-ant-your-key php chat-anthropic.php
 ```
 
-### 4.2 Google Gemini
+### 4.2 使用 Google Gemini
 
- Gemini 
+安装 Gemini 桥接包：
 
 ```bash
 composer require symfony/ai-gemini-platform
 ```
 
- `chat-gemini.php`
+创建 `chat-gemini.php`：
 
 ```php
 <?php
@@ -274,29 +274,29 @@ echo $result->asText().\PHP_EOL;
 GEMINI_API_KEY=your-key php chat-gemini.php
 ```
 
-### 4.3 
+### 4.3 对比三个平台
 
-——** **
+注意观察——**除了三处标记 ✏️ 的地方，所有代码完全相同**：
 
-| | OpenAI | Anthropic | Gemini |
+| 变化点 | OpenAI | Anthropic | Gemini |
 |--------|--------|-----------|--------|
-| `use` | `Bridge\OpenAi\PlatformFactory` | `Bridge\Anthropic\PlatformFactory` | `Bridge\Gemini\PlatformFactory` |
-| API | `OPENAI_API_KEY` | `ANTHROPIC_API_KEY` | `GEMINI_API_KEY` |
-| | `gpt-4o-mini` | `claude-sonnet-4-5-20250929` | `gemini-2.5-flash` |
+| `use` 命名空间 | `Bridge\OpenAi\PlatformFactory` | `Bridge\Anthropic\PlatformFactory` | `Bridge\Gemini\PlatformFactory` |
+| API 密钥变量 | `OPENAI_API_KEY` | `ANTHROPIC_API_KEY` | `GEMINI_API_KEY` |
+| 模型名称 | `gpt-4o-mini` | `claude-sonnet-4-5-20250929` | `gemini-2.5-flash` |
 
-> Bridge `MessageBag``DeferredResult` Symfony 
+> 💡 这就是 Bridge 架构的威力：你的业务逻辑只依赖 `MessageBag`、`DeferredResult` 等核心抽象，切换平台不需要修改任何业务代码。在 Symfony 框架中，你甚至可以通过配置文件来切换平台，完全不需要改代码。
 
 ---
 
-## 5. 
+## 5. 流式响应
 
-—— AI 
+在对话类应用中，逐字输出（流式响应）能大幅改善用户体验——用户无需等待 AI 生成完整回复。
 
-### 5.1 
+### 5.1 启用流式响应
 
- `invoke()` `'stream' => true` `asStream()` 
+只需在 `invoke()` 的选项中添加 `'stream' => true`，然后用 `asStream()` 迭代即可：
 
- `stream.php`
+创建 `stream.php`：
 
 ```php
 <?php
@@ -330,9 +330,9 @@ echo \PHP_EOL;
 OPENAI_API_KEY=sk-your-key php stream.php
 ```
 
+运行后，你会看到文字像打字机一样逐字出现在终端中，而非等待全部生成后一次性输出。
 
-
-### 5.2 
+### 5.2 流式响应的工作原理
 
 ```php
 $platform->invoke()           invoke 返回 DeferredResult
@@ -347,19 +347,19 @@ foreach ($result as $chunk)   每次 yield 一个文本片段
 循环结束                       所有内容接收完毕
 ```
 
-> PHP Generator`yield``asStream()` `Generator` HTTP chunk AI 
+> 💡 流式响应的底层使用 PHP Generator（`yield`）。`asStream()` 返回一个 `Generator`，每次迭代时从 HTTP 响应流中读取一个 chunk。这意味着 AI 还在生成后续内容的时候，你已经可以处理和显示前面的内容了。
 
-> ——AnthropicGemini `'stream' => true` 
+> 📌 流式响应在所有支持的平台上都可用——Anthropic、Gemini 等同样只需添加 `'stream' => true` 选项。
 
 ---
 
-## 6. 
+## 6. 结构化输出
 
-AI ——Symfony AI AI **PHP ** AI 
+AI 返回的不一定非得是纯文本——Symfony AI 支持让 AI 直接返回 **PHP 对象**。这在需要程序化处理 AI 输出时极为有用。
 
-### 6.1 
+### 6.1 定义输出结构
 
- PHP `#[With]` 
+首先，用普通的 PHP 类定义你期望的输出结构。使用 `#[With]` 属性为字段添加描述和约束：
 
 ```php
 <?php
@@ -384,13 +384,13 @@ class SentimentResult
 }
 ```
 
-> `#[With]` `Symfony\AI\Platform\Contract\JsonSchema\Attribute\With` JSON Schema AI `description``enum``minimum``maximum``pattern` 
+> 📌 `#[With]` 属性来自 `Symfony\AI\Platform\Contract\JsonSchema\Attribute\With`。它会被自动转换为 JSON Schema，告诉 AI 应该按照什么结构返回数据。常用参数包括 `description`、`enum`、`minimum`、`maximum`、`pattern` 等。
 
-### 6.2 
+### 6.2 获取结构化输出
 
- `PlatformSubscriber` 
+使用结构化输出需要注册 `PlatformSubscriber` 事件订阅器：
 
- `structured.php`
+创建 `structured.php`：
 
 ```php
 <?php
@@ -437,9 +437,9 @@ echo '摘要：'.$sentiment->summary.\PHP_EOL;          // 用户对产品非常
 OPENAI_API_KEY=sk-your-key php structured.php
 ```
 
-> `composer require symfony/event-dispatcher``PlatformSubscriber` PHP JSON Schema AI JSON PHP 
+> ⚠️ 使用结构化输出时，需要额外安装事件调度器组件：`composer require symfony/event-dispatcher`。`PlatformSubscriber` 负责拦截请求，将你的 PHP 类自动转换为 JSON Schema 发给 AI，并将返回的 JSON 反序列化为 PHP 对象。
 
-### 6.3 
+### 6.3 工作流程
 
 ```php
 SentimentResult::class
@@ -457,17 +457,17 @@ PlatformSubscriber 将 JSON 反序列化为 SentimentResult 对象
 $result->asObject() 返回类型安全的 PHP 对象
 ```
 
-> —— `PlatformFactory` OpenAIAnthropic Gemini PHP 
+> 💡 结构化输出在各个平台上的使用方式完全相同——只需切换 `PlatformFactory` 即可。这意味着无论你用 OpenAI、Anthropic 还是 Gemini，都能获得一致的 PHP 对象返回。
 
 ---
 
-## 7. 
+## 7. 多模态输入
 
- AI ""Symfony AI `Image` 
+现代 AI 模型不仅能理解文本，还能"看"图片。Symfony AI 通过 `Image` 类让图片输入变得轻而易举。
 
-### 7.1 
+### 7.1 发送本地图片
 
- `image-analysis.php`
+创建 `image-analysis.php`：
 
 ```php
 <?php
@@ -495,9 +495,9 @@ $result = $platform->invoke('gpt-4o-mini', $messages);
 echo $result->asText().\PHP_EOL;
 ```
 
-### 7.2 
+### 7.2 发送网络图片
 
- `ImageUrl`
+如果图片在网络上，可以使用 `ImageUrl`：
 
 ```php
 <?php
@@ -524,18 +524,18 @@ $result = $platform->invoke('gpt-4o-mini', $messages);
 echo $result->asText().\PHP_EOL;
 ```
 
-### 7.3 
+### 7.3 多模态输入类型一览
 
-`Message::ofUser()` 
+`Message::ofUser()` 支持传入多种内容类型，可自由组合：
 
-| | | |
+| 内容类型 | 类 | 创建方式 |
 |----------|------|----------|
-| | `string` | |
-| | `Image` | `Image::fromFile('/path/to/image.jpg')` |
-| | `ImageUrl` | `new ImageUrl('https://...')` |
-| Base64 | `Image` | `Image::fromDataUrl('data:image/png;base64,...')` |
-| | `Audio` | `Audio::fromFile('/path/to/audio.mp3')` |
-| | `Document` | `Document::fromFile('/path/to/doc.pdf')` |
+| 文本 | `string` | 直接传入字符串 |
+| 本地图片 | `Image` | `Image::fromFile('/path/to/image.jpg')` |
+| 网络图片 | `ImageUrl` | `new ImageUrl('https://...')` |
+| Base64 图片 | `Image` | `Image::fromDataUrl('data:image/png;base64,...')` |
+| 音频 | `Audio` | `Audio::fromFile('/path/to/audio.mp3')` |
+| 文档 | `Document` | `Document::fromFile('/path/to/doc.pdf')` |
 
 ```php
 // 可以在一条消息中组合多种内容类型
@@ -546,15 +546,15 @@ Message::ofUser(
 );
 ```
 
-> AI OpenAI Gemini Anthropic 
+> 💡 不同 AI 平台支持的模态类型有所差异。例如，OpenAI 和 Gemini 支持图片和音频，Anthropic 支持图片和文档。如果传入了不支持的内容类型，平台会返回错误。
 
 ---
 
-## 8. 
+## 8. 运行示例项目
 
-Symfony AI Demo 
+Symfony AI 仓库自带大量可运行的示例和一个完整的 Demo 应用，是学习和实验的最佳起点。
 
-### 8.1 examples 
+### 8.1 运行 examples 示例
 
 ```bash
 # 克隆仓库
@@ -569,7 +569,7 @@ cp .env .env.local
 # 编辑 .env.local，填入你的 API 密钥
 ```
 
-
+运行单个示例：
 
 ```bash
 # 基础对话
@@ -588,15 +588,15 @@ php anthropic/chat.php
 php gemini/chat.php
 ```
 
-> `-vv` `-vvv` HTTP 
+> 💡 添加 `-vv` 或 `-vvv` 参数可以查看详细的 HTTP 请求和工具调用日志，非常适合调试和学习：
 >
 > ```bash
 > php openai/chat.php -vvv
 > ```
 
-### 8.2 Demo 
+### 8.2 运行 Demo 应用
 
-Demo Symfony Web RAG 
+Demo 是一个完整的 Symfony Web 应用，包含聊天界面、RAG 知识库等功能：
 
 ```bash
 # 前置条件：需要 Docker 和 Symfony CLI
@@ -609,32 +609,32 @@ symfony serve -d
 echo "OPENAI_API_KEY='sk-your-key'" > .env.local
 ```
 
- `https://localhost:8000/` AI 
+打开浏览器访问 `https://localhost:8000/`，你将看到一个功能完整的 AI 聊天界面。
 
-> Demo PlatformAgentStoreChat Symfony AI 
+> 📌 Demo 应用展示了 Platform、Agent、Store、Chat 组件的协同工作方式，是理解 Symfony AI 完整能力的绝佳入口。
 
 ---
 
-## 9. 
+## 9. 下一步
 
- Symfony AI 
+恭喜！你已经掌握了 Symfony AI 的五项核心技能：
 
-| | | |
+| 技能 | 核心方法 | 本章示例 |
 |------|----------|---------|
-| ✅ | `invoke()` + `asText()` | `chat.php` |
-| ✅ | `PlatformFactory` + | `chat-anthropic.php` / `chat-gemini.php` |
-| ✅ | `'stream' => true` + `asStream()` | `stream.php` |
-| ✅ | `'response_format' => Class` + `asObject()` | `structured.php` |
-| ✅ | `Image::fromFile()` / `ImageUrl` | `image-analysis.php` |
+| ✅ 文本对话 | `invoke()` + `asText()` | `chat.php` |
+| ✅ 平台切换 | 更换 `PlatformFactory` + 模型名 | `chat-anthropic.php` / `chat-gemini.php` |
+| ✅ 流式响应 | `'stream' => true` + `asStream()` | `stream.php` |
+| ✅ 结构化输出 | `'response_format' => Class` + `asObject()` | `structured.php` |
+| ✅ 多模态输入 | `Image::fromFile()` / `ImageUrl` | `image-analysis.php` |
 
- **[ 2 Platform ](02-platform.md)** 
+在 **[第 2 章：Platform 深入理解](02-platform.md)** 中，我们将：
 
-- Platform ——`PlatformInterface``Contract``ModelClient` 
-- Embeddings
-- —— AI 
-- Token 
-- 
+- 深入 Platform 组件的完整架构——`PlatformInterface`、`Contract`、`ModelClient` 三大核心
+- 探索嵌入向量（Embeddings）的生成方式
+- 了解事件系统——在 AI 调用前后注入自定义逻辑
+- 学习 Token 使用追踪和元数据管理
+- 掌握更多模型选项和高级配置
 
 ---
 
-> [← ](00-preface.md) | [](README.md) | [Platform →](02-platform.md)
+> 📖 [← 上一章：前言与导读](00-preface.md) | [返回目录](README.md) | [下一章：Platform 深入理解 →](02-platform.md)
