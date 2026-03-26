@@ -614,73 +614,62 @@ AI Bundle 提供多个命令行工具，方便开发调试。
 通过命令行与 Agent 进行交互式对话：
 
 ```bash
-# 调用指定 Agent
-php bin/console ai:agent:call --agent=assistant "请帮我分析这段代码的性能问题"
-
-# 流式输出
-php bin/console ai:agent:call --agent=assistant --stream "写一篇关于 Symfony 的文章"
+# 调用指定 Agent（agent 名称是位置参数）
+php bin/console ai:agent:call assistant
 ```
 
-> `ai:agent:call` 命令支持交互式模式，持续输入消息进行多轮对话，直到用户手动退出。
+> `ai:agent:call` 命令启动交互式模式，持续输入消息进行多轮对话，直到用户手动退出。
 
 ### 7.2 `ai:platform:invoke` —— 直接调用平台
 
 绕过 Agent 层，直接调用 AI 平台，适合底层调试：
 
 ```bash
-# 使用默认平台
-php bin/console ai:platform:invoke "Hello, World!"
+# 指定平台、模型和消息（均为位置参数）
+php bin/console ai:platform:invoke openai gpt-4o "Explain dependency injection"
 
-# 指定平台和模型
-php bin/console ai:platform:invoke \
-    --platform=ai.platform.openai \
-    --model=gpt-4o \
-    "Explain dependency injection"
-
-# 图像处理
-php bin/console ai:platform:invoke \
-    --image=path/to/image.jpg \
-    "What's in this image?"
+# 使用 Anthropic
+php bin/console ai:platform:invoke anthropic claude-sonnet-4-20250514 "Hello, World!"
 ```
 
 ### 7.3 Store 相关命令
 
 ```bash
 # 初始化向量存储（创建集合/表/索引）
-php bin/console ai:store:setup --store=qdrant_store
+php bin/console ai:store:setup qdrant.my_store
 
 # 索引文档到向量存储
-php bin/console ai:store:index --store=qdrant_store
+php bin/console ai:store:index my_indexer
 
-# 从向量存储检索
-php bin/console ai:store:retrieve --store=qdrant_store "Symfony 依赖注入"
+# 从向量存储检索（使用 retriever 名称）
+php bin/console ai:store:retrieve my_retriever "Symfony 依赖注入"
 
 # 删除向量存储
-php bin/console ai:store:drop --store=qdrant_store
+php bin/console ai:store:drop qdrant.my_store
 ```
 
 ### 7.4 Message Store 相关命令
 
 ```bash
 # 初始化消息存储
-php bin/console ai:message-store:setup --store=db_store
+php bin/console ai:message-store:setup doctrine.dbal.my_store
 
 # 删除消息存储
-php bin/console ai:message-store:drop --store=db_store
+php bin/console ai:message-store:drop doctrine.dbal.my_store
 ```
 
 ### 7.5 命令速查表
 
-| 命令 | 说明 | 关键参数 |
+| 命令 | 说明 | 参数 |
 |------|------|---------|
-| `ai:agent:call` | 交互式 Agent 对话 | `--agent`、`--stream` |
-| `ai:platform:invoke` | 单次平台调用 | `--platform`、`--model`、`--image` |
-| `ai:store:setup` | 初始化向量存储 | `--store` |
-| `ai:store:drop` | 删除向量存储 | `--store` |
-| `ai:store:index` | 索引文档 | `--store` |
-| `ai:store:retrieve` | 检索文档 | `--store` |
-| `ai:message-store:setup` | 初始化消息存储 | `--store` |
-| `ai:message-store:drop` | 删除消息存储 | `--store` |
+| `ai:agent:call` | 交互式 Agent 对话 | `<agent>` |
+| `ai:platform:invoke` | 单次平台调用 | `<platform> <model> <message>` |
+| `ai:store:setup` | 初始化向量存储 | `<store>` |
+| `ai:store:drop` | 删除向量存储 | `<store>` |
+| `ai:store:index` | 索引文档 | `<indexer>` |
+| `ai:store:retrieve` | 检索文档 | `<retriever> [query]` |
+| `ai:message-store:setup` | 初始化消息存储 | `<store>` |
+| `ai:message-store:drop` | 删除消息存储 | `<store>` |
 
 ---
 
