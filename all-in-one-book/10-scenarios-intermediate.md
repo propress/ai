@@ -306,7 +306,7 @@ ai:
         ops_assistant:
             platform: ai.platform.gemini
             model: gemini-2.0-flash
-            system: '你是运维助手'
+            prompt: '你是运维助手'
             # 无需手动配置工具——所有 #[AsTool] 类自动注册
 ```
 
@@ -682,11 +682,11 @@ ai:
         tech_support:
             platform: ai.platform.openai
             model: gpt-4o
-            system: '你是技术支持专家...'
+            prompt: '你是技术支持专家...'
         billing_support:
             platform: ai.platform.openai
             model: gpt-4o
-            system: '你是账单客服专家...'
+            prompt: '你是账单客服专家...'
         # Orchestrator 需要在服务配置中手动组装
 ```
 

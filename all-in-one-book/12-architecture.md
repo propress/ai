@@ -836,7 +836,7 @@ when@dev:
     ai:
         platform:
             ollama:
-                type: ollama
+                endpoint: 'http://localhost:11434'
 
 # 测试环境——使用 Mock
 when@test:
@@ -848,10 +848,10 @@ when@test:
 when@prod:
     ai:
         platform:
-            production:
-                type: cache
-                platform: ai.platform.failover
-                cache_pool: cache.ai
+            cache:
+                production:
+                    platform: ai.platform.failover.main
+                    service: cache.ai
 ```
 
 ### 7.2 成本控制
