@@ -984,4 +984,4 @@ if ($this->getMonthlySpend() > $this->getBudget() * 0.8) {
 
 ## 9. 下一步
 
-在 [第 13 章](13-appendix.md) 中，我们提供完整的 API 速查手册——包括所有组件的核心 API、支持的 33+ AI 平台和 24 个向量存储清单、Agent 工具 Bridge 清单、常用配置模板和常见问题解答。
+在 [第 26 章](26-appendix.md) 中，我们提供完整的 API 速查手册——包括所有组件的核心 API、支持的 33 个 AI 平台和 24 个向量存储清单、Agent 工具 Bridge 清单、常用配置模板和常见问题解答。

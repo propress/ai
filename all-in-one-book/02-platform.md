@@ -2,7 +2,7 @@
 
 ## 🎯 本章学习目标
 
-深入理解 Platform 组件的核心架构、消息系统、结果体系、结构化输出、流式响应与事件系统，掌握 33+ 桥接器的使用方式，为构建生产级 AI 应用打下坚实基础。
+深入理解 Platform 组件的核心架构、消息系统、结果体系、结构化输出、流式响应与事件系统，掌握 33 个桥接器的使用方式，为构建生产级 AI 应用打下坚实基础。
 
 ---
 
@@ -1713,7 +1713,7 @@ class RateLimitSubscriber implements EventSubscriberInterface
 
 ## 9. 平台桥接器一览
 
-Platform 组件提供 33+ 个 AI 平台的桥接器实现。
+Platform 组件提供 33 个 AI 平台的桥接器实现。
 
 ### 9.1 主流商业平台
 
@@ -2006,6 +2006,6 @@ $platform->invoke('gpt-4o', $messages, ['temperature' => 1.0]);
 - **结构化输出**：`#[With]` 属性、嵌套 DTO、枚举、JSON Schema 生成
 - **流式响应**：Generator 迭代、SSE 集成、与工具调用结合、Stream Listener
 - **事件系统**：`InvocationEvent`、`ResultEvent`、日志/监控/限流
-- **桥接器全景**：33+ 桥接器、PlatformFactory 模式、Cache/Failover/ScopingHttpClient
+- **桥接器全景**：33 个桥接器、PlatformFactory 模式、Cache/Failover/ScopingHttpClient
 
 Platform 是 Symfony AI 的地基。在 [第 3 章：Agent 组件](03-agent.md) 中，我们将学习如何在 Platform 之上构建智能 Agent——它能自主规划、调用工具、维护对话状态，把 AI 从"问答机器"变成"能干活的助手"。

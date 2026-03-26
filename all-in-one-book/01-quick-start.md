@@ -10,7 +10,7 @@
 
 在 [第 0 章：前言与导读](00-preface.md) 中，我们了解了 Symfony AI 的全貌：
 
-- **Platform** 是所有功能的基石，提供与 33+ AI 平台通信的统一接口
+- **Platform** 是所有功能的基石，提供与 33 个 AI 平台通信的统一接口
 - **Bridge 架构**将核心抽象与平台实现彻底分离——你的业务代码只依赖核心抽象
 - `PlatformFactory::create()` 一行代码即可创建完整配置的 Platform 实例
 - `invoke()` 返回 `DeferredResult`，调用 `asText()` 时才真正发送 HTTP 请求
@@ -151,7 +151,7 @@ OPENAI_API_KEY=sk-your-key php chat.php
 
 ```text
 Symfony AI 的核心组件包括：
-1. Platform — 统一的 AI 平台接口，支持 33+ 平台
+1. Platform — 统一的 AI 平台接口，支持 33 个平台
 2. Agent — 智能代理框架，支持工具调用和任务编排
 3. Store — 向量存储抽象，用于 RAG 检索增强生成
 4. Chat — 多轮对话管理，支持消息历史持久化

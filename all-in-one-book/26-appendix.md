@@ -503,7 +503,7 @@ $dispatcher->addListener(ResultEvent::class, function (ResultEvent $event) {
 1. **开发阶段**使用 CachePlatform 避免重复请求
 2. **简单任务**使用 mini 模型（成本降低 90%+）
 3. 设置 API 平台的**月度预算上限**
-4. 使用 Token 监控（参考第 12 章事件监控）追踪消耗
+4. 使用 Token 监控（参考第 25 章事件监控）追踪消耗
 5. 在本地开发时考虑使用 **Ollama** 运行免费模型
 
 ### 9.3 速率限制处理

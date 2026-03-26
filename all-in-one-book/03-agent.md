@@ -10,7 +10,7 @@
 
 在 [第 2 章：Platform 组件深入剖析](02-platform.md) 中，我们掌握了 Platform 的核心能力：
 
-- `PlatformInterface` 提供统一的 `invoke()` 方法与 33+ AI 平台通信
+- `PlatformInterface` 提供统一的 `invoke()` 方法与 33 个 AI 平台通信
 - `MessageBag` 管理对话历史（system / user / assistant / tool 消息）
 - `DeferredResult` 延迟求值，通过 `asText()`、`asObject()`、`asStream()` 等方法获取结果
 - 结构化输出、流式响应、多模态输入等高级功能

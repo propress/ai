@@ -333,4 +333,4 @@ class KnowledgeBaseController
 
 ## 下一步
 
-恭喜你完成了所有 5 个高级实战场景！你已经掌握了 Symfony AI 在生产环境中的核心技术。接下来可以回顾 [第 11 章：实战场景（高级篇）](11-scenarios-advanced.md) 的总览，或开始构建你自己的项目。
+恭喜你完成了所有高级实战场景！你已经掌握了 Symfony AI 在生产环境中的核心技术。接下来请继续阅读 [第 25 章：高级架构与最佳实践](25-architecture.md)，或开始构建你自己的项目。

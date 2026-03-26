@@ -11,7 +11,7 @@
 在 [第 5 章：Chat 组件](05-chat.md) 中，我们掌握了多轮对话管理：
 
 - **ChatInterface**：通过 `initiate()` 和 `submit()` 两个方法实现完整的对话生命周期
-- **10+ 消息存储后端**：Redis、Doctrine DBAL、MongoDB、Session 等，灵活的对话历史持久化
+- **10 个消息存储后端**：Redis、Doctrine DBAL、MongoDB、Session 等，灵活的对话历史持久化
 - **消息序列化**：MessageNormalizer 确保消息对象的可靠序列化/反序列化
 - **会话隔离**：按用户、按会话、按任务等多种隔离策略
 
@@ -502,7 +502,7 @@ class ChatController extends AbstractController
 
 ### 6.1 向量存储配置
 
-AI Bundle 支持 25+ 种向量存储后端：
+AI Bundle 支持 24 种向量存储后端：
 
 ```yaml
 ai:
