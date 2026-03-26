@@ -475,30 +475,30 @@ use Symfony\AI\Store\Query\HybridQuery;
 // 策略 1：纯向量检索——基于语义相似度
 // 优势：理解同义词和语义（"退货"能匹配"退款流程"）
 // 劣势：精确关键词可能不准
-$results = $store->query(new VectorQuery($queryVector, limit: 5));
+$results = $store->query(new VectorQuery($queryVector), ['limit' => 5]);
 
 // 策略 2：纯文本检索——基于关键词全文搜索
 // 优势：精确关键词匹配
 // 劣势：无法理解语义
-$results = $store->query(new TextQuery('退货政策', limit: 5));
+$results = $store->query(new TextQuery('退货政策'), ['limit' => 5]);
 
 // 策略 3：混合检索（推荐）——结合向量 + 文本
 // 同时利用语义理解和关键词匹配，效果最好
 $results = $store->query(new HybridQuery(
     vector: $queryVector,
     text: '退货政策',
-    limit: 5,
-));
+), ['limit' => 5]);
 ```
 
 > **知识扩展：PostgreSQL pgvector 的查询选项**
 >
 > Postgres Store 支持丰富的查询选项：
 > ```php
-> $results = $store->query(new VectorQuery($vector, limit: 10), [
-> 'where' => 'metadata->>\'category\' = :category', // SQL 条件过滤
-> 'params' => ['category' => '退货政策'],
-> 'maxScore' => 0.8, // 最大距离阈值（过滤低相关结果）
+> $results = $store->query(new VectorQuery($vector), [
+>     'limit' => 10,
+>     'where' => 'metadata->>\'category\' = :category', // SQL 条件过滤
+>     'params' => ['category' => '退货政策'],
+>     'maxScore' => 0.8, // 最大距离阈值（过滤低相关结果）
 > ]);
 > ```
 > 通过 `where` 子句，你可以在向量搜索前先用元数据过滤——这在多分类知识库中特别有用。
@@ -511,12 +511,12 @@ $results = $store->query(new HybridQuery(
 use Symfony\AI\Store\Reranker\Reranker;
 
 // 初始检索（召回更多候选）
-$candidates = $store->query(new VectorQuery($vector, limit: 20));
+$candidates = $store->query(new VectorQuery($vector), ['limit' => 20]);
 
 // 使用 Reranker 精排——需要支持重排序的模型
 // 模型名可包含 ?task=text-ranking 参数
 $reranker = new Reranker($platform, 'voyage-rerank-2?task=text-ranking');
-$ranked = $reranker->rerank($query, $candidates, limit: 5);
+$ranked = $reranker->rerank($query, $candidates, topK: 5);
 ```
 
 ---

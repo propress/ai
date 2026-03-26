@@ -309,11 +309,11 @@ $platform = PlatformFactory::create();
 
 // 使用本地模型——API 与云端模型完全一致
 $response = $platform->invoke(
-    $messages,
     'llama3.1',   // 模型名就是 ollama pull 时的名字
+    $messages,
 );
 
-echo $response->getContent();
+echo $response->asText();
 ```
 
 ### 3.5 本地 RAG——数据零泄漏

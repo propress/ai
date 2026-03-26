@@ -983,7 +983,7 @@ $embeddingMemory = new EmbeddingProvider(
 use Symfony\AI\Agent\Memory\MemoryInputProcessor;
 
 $memoryProcessor = new MemoryInputProcessor(
-    providers: [
+    memoryProviders: [
         $staticMemory,      // 固定知识
         $embeddingMemory,   // 动态检索
     ],
