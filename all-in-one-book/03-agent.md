@@ -10,7 +10,7 @@
 
 在 [第 2 章：Platform 组件深入剖析](02-platform.md) 中，我们掌握了 Platform 的核心能力：
 
-- `PlatformInterface` 提供统一的 `invoke()` 方法与 33+ AI 平台通信
+- `PlatformInterface` 提供统一的 `invoke()` 方法与 33 个 AI 平台通信
 - `MessageBag` 管理对话历史（system / user / assistant / tool 消息）
 - `DeferredResult` 延迟求值，通过 `asText()`、`asObject()`、`asStream()` 等方法获取结果
 - 结构化输出、流式响应、多模态输入等高级功能
@@ -392,6 +392,12 @@ class ProductTool
 }
 ```
 
+> ⚠️ **常见错误：工具返回类型不匹配**
+>
+> AI 期望工具返回字符串结果。如果工具方法返回复杂对象而未实现 `ToolResultConverterInterface`，会导致静默失败或类型错误。确保：
+> 1. 简单工具直接返回 `string`
+> 2. 复杂返回值实现 `ToolResultConverterInterface` 进行序列化
+
 ### 4.5 使用 #[With] 属性添加参数约束
 
 通过 Platform 组件的 `#[With]` 属性，可以为工具参数添加 JSON Schema 约束：
@@ -464,6 +470,44 @@ Toolbox::execute(ToolCall $toolCall)
 3. 解析 PHPDoc `@param` 标签获取参数描述
 4. 识别 `#[With]` 属性提取额外约束
 5. 组装为 JSON Schema 格式的参数定义
+
+> 💡 **0.7 版本变更**：在 0.7 之前，工具工厂基于 `AbstractToolFactory` 基类。0.7 版本移除了该抽象类，拆分为两个独立实现：`ReflectionToolFactory`（声明式）和 `MemoryToolFactory`（编程式）。
+
+### 4.7.1 MemoryToolFactory —— 手动注册工具
+
+当你需要在运行时动态注册工具，或不使用 `#[AsTool]` 属性时，可以使用 `MemoryToolFactory`：
+
+```php
+use Symfony\AI\Agent\Toolbox\ToolFactory\MemoryToolFactory;
+
+$factory = new MemoryToolFactory();
+
+// 手动注册工具
+$factory->addTool(
+    class: MyWeatherService::class,
+    name: 'get_weather',
+    description: '获取指定城市的天气信息',
+    method: 'fetchWeather',  // 默认为 '__invoke'
+);
+
+// 也可以注册对象实例
+$service = new MyWeatherService($httpClient);
+$factory->addTool(
+    class: $service,
+    name: 'get_weather',
+    description: '获取指定城市的天气信息',
+);
+```
+
+#### ReflectionToolFactory vs MemoryToolFactory
+
+| 特性 | ReflectionToolFactory | MemoryToolFactory |
+|------|----------------------|-------------------|
+| 工具发现 | 自动（通过 `#[AsTool]` 属性） | 手动注册 |
+| 配置方式 | 声明式 | 编程式 |
+| 运行时动态注册 | ❌ | ✅ |
+| 需要属性注解 | ✅ | ❌ |
+| 适用场景 | 大多数情况 | 动态工具、第三方类封装 |
 
 ### 4.8 ToolResult 和 ToolResultConverter
 
@@ -1338,6 +1382,89 @@ flowchart LR
 | `ToolCallSucceeded` | 工具成功后 | 记录结果、性能监控 |
 | `ToolCallFailed` | 工具失败后 | 错误报警、异常追踪 |
 | `ToolCallsExecuted` | 一批调用完成后 | `setResult()` 可跳过后续 LLM 调用 |
+
+### 9.2.1 ToolCallRequested 事件（0.7 新增）
+
+`ToolCallRequested` 在工具**执行前**分发，允许你拦截、拒绝或替换工具调用结果。这是实现工具审批、安全检查和测试 Mock 的关键扩展点。
+
+```php
+use Symfony\AI\Agent\Toolbox\Event\ToolCallRequested;
+use Symfony\AI\Agent\Toolbox\Tool\ToolCall;
+use Symfony\AI\Agent\Toolbox\Tool\Tool;
+
+// 事件属性
+$event->getToolCall();   // ToolCall：工具调用详情（名称、参数）
+$event->getMetadata();   // Tool：工具元数据（描述、schema）
+```
+
+#### 拒绝工具调用
+
+```php
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\AI\Agent\Toolbox\Event\ToolCallRequested;
+
+class ToolSecuritySubscriber implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents(): array
+    {
+        return [ToolCallRequested::class => 'onToolCallRequested'];
+    }
+
+    public function onToolCallRequested(ToolCallRequested $event): void
+    {
+        $toolCall = $event->getToolCall();
+
+        // 拒绝危险操作
+        if ('delete_database' === $toolCall->name) {
+            $event->deny('此工具已被安全策略禁止');
+            return;
+        }
+
+        // 限制生产环境的写入操作
+        if (str_starts_with($toolCall->name, 'write_') && 'prod' === $_ENV['APP_ENV']) {
+            $event->deny('生产环境不允许写入操作');
+        }
+    }
+}
+```
+
+#### 替换执行结果
+
+```php
+use Symfony\AI\Agent\Toolbox\Event\ToolCallRequested;
+use Symfony\AI\Agent\Toolbox\Tool\ToolResult;
+
+class CacheToolResultSubscriber implements EventSubscriberInterface
+{
+    public function __construct(private CacheInterface $cache) {}
+
+    public static function getSubscribedEvents(): array
+    {
+        return [ToolCallRequested::class => 'onToolCallRequested'];
+    }
+
+    public function onToolCallRequested(ToolCallRequested $event): void
+    {
+        $cacheKey = 'tool_' . md5(serialize($event->getToolCall()));
+        $cached = $this->cache->get($cacheKey);
+
+        if (null !== $cached) {
+            // 使用缓存结果，跳过实际执行
+            $event->setResult(new ToolResult($cached));
+        }
+    }
+}
+```
+
+#### 事件行为说明
+
+| 方法 | 效果 | 传播行为 |
+|------|------|---------|
+| `deny(?string $reason)` | 拒绝执行，返回错误消息给 AI | 停止传播 |
+| `setResult(ToolResult)` | 跳过执行，使用替代结果 | 停止传播 |
+| 不调用任何方法 | 正常执行工具 | 继续传播 |
+
+> ⚠️ **注意**：`ToolCallRequested` 实现了 `StoppableEventInterface`。一旦调用 `deny()` 或 `setResult()`，后续监听器将不再收到此事件。
 
 ### 9.3 事件使用示例
 

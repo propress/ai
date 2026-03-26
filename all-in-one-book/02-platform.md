@@ -2,7 +2,7 @@
 
 ## 🎯 本章学习目标
 
-深入理解 Platform 组件的核心架构、消息系统、结果体系、结构化输出、流式响应与事件系统，掌握 33+ 桥接器的使用方式，为构建生产级 AI 应用打下坚实基础。
+深入理解 Platform 组件的核心架构、消息系统、结果体系、结构化输出、流式响应与事件系统，掌握 33 个桥接器的使用方式，为构建生产级 AI 应用打下坚实基础。
 
 ---
 
@@ -120,6 +120,14 @@ Bridge/OpenAi/
 
 > 📌 每个 Bridge 只需实现 `supports()` + `request()` / `convert()`，Platform 会自动根据模型名称路由到正确的 Bridge。
 
+> ⚠️ **常见错误：忘记安装 Bridge 包**
+>
+> 使用特定 AI 平台前，必须安装对应的桥接器包。例如使用 OpenAI 时需要：
+> ```bash
+> composer require symfony/ai-openai
+> ```
+> 如果看到 `No model client found` 错误，通常是因为缺少对应的 Bridge 包。
+
 ### 2.3 请求完整流程
 
 当你调用 `$platform->invoke('gpt-4o', $messageBag, $options)` 时，内部经历以下步骤：
@@ -219,6 +227,47 @@ final class Platform implements PlatformInterface
 ```
 
 当有多个 Bridge 注册时，Platform 遍历所有 `ModelClientInterface` 实例，找到第一个 `supports($model)` 返回 `true` 的客户端来处理请求。
+
+### 2.5 Contract 层：请求归一化
+
+`Contract` 类是 Platform 架构中的关键中间层，负责将不同类型的输入（字符串、数组、`MessageBag` 等）统一转换为各平台 API 能理解的请求格式。
+
+```php
+use Symfony\AI\Platform\Contract;
+
+// Contract 创建（通常由 PlatformFactory 自动完成）
+$contract = Contract::create(); // 使用默认的 Normalizer 集合
+
+// 核心方法
+$payload = $contract->createRequestPayload($model, $input, $options);
+$toolOption = $contract->createToolOption($tools, $model);
+```
+
+#### 工作流程
+
+```
+用户输入 (string/array/MessageBag)
+    ↓
+Contract::createRequestPayload()
+    ↓ 使用 NormalizerInterface 链
+标准化的 array/string 请求体
+    ↓
+ModelClientInterface::invoke()
+    ↓
+发送到 AI 平台 API
+```
+
+#### 自定义 Contract
+
+各桥接器可以扩展默认 Contract，添加平台特有的序列化逻辑：
+
+| 桥接器 | 自定义 Contract | 特殊处理 |
+|--------|----------------|---------|
+| Ollama | `OllamaContract` | 本地模型特有的格式化 |
+| OpenAI | `OpenAiContract` | 支持 function calling 格式 |
+| Anthropic | `AnthropicContract` | 支持 tool_use 和 cache_control |
+
+> 💡 **提示**：大多数情况下你不需要直接操作 Contract。它由 `PlatformFactory::create()` 自动配置。仅在开发自定义桥接器时需要了解此层。
 
 ---
 
@@ -566,22 +615,36 @@ final class Model
 
 ### 4.2 ModelCatalog 模型目录
 
-`ModelCatalogInterface` 管理模型信息，每个 Bridge 提供其平台专用的 `ModelCatalog`：
+每个桥接器（Bridge）都实现了 `ModelCatalogInterface`，提供该平台支持的模型列表及其能力描述：
 
 ```php
+use Symfony\AI\Platform\ModelCatalog\ModelCatalogInterface;
+
 interface ModelCatalogInterface
 {
+    /** @param non-empty-string $modelName */
     public function getModel(string $modelName): Model;
+
+    /** @return array<string, array{class: string, capabilities: list<Capability>}> */
     public function getModels(): array;
 }
 ```
 
+#### 使用方式
+
 `AbstractModelCatalog` 提供基础实现，支持参数解析和变体匹配：
 
 ```php
-// 通过平台获取模型目录
+// 通过 Platform 获取模型目录
 $catalog = $platform->getModelCatalog();
+
+// 获取特定模型信息
 $model = $catalog->getModel('gpt-4o');
+
+// 列出所有可用模型
+foreach ($catalog->getModels() as $name => $info) {
+    echo "$name: " . implode(', ', array_map(fn($c) => $c->name, $info['capabilities'])) . "\n";
+}
 
 // 检查模型能力
 if ($model->supports(Capability::TOOL_CALLING)) {
@@ -594,6 +657,16 @@ $model = $catalog->getModel('gpt-4o?temperature=0.7');
 // Ollama 大小变体
 $model = $catalog->getModel('llama3.2:3b');
 ```
+
+#### FallbackModelCatalog
+
+当桥接器未提供目录时，`FallbackModelCatalog` 作为兜底实现，根据模型名称前缀自动推断能力。
+
+#### 动态目录（0.7 新特性）
+
+Ollama 和 ElevenLabs 的模型目录在 0.7 版本中改为从服务器自动获取，不再使用硬编码列表。这意味着：
+- Ollama：自动发现已拉取的本地模型
+- ElevenLabs：自动获取可用的语音模型列表
 
 ### 4.3 Capability 枚举
 
@@ -792,6 +865,8 @@ foreach ($stream as $chunk) {
 
 ### 5.7 Token 使用追踪
 
+每次 AI 调用都会消耗 Token，追踪 Token 用量对成本控制至关重要。Symfony AI 提供了完整的 Token 追踪体系。
+
 Token 用量信息通过元数据获取：
 
 ```php
@@ -812,6 +887,180 @@ if (null !== $tokenUsage) {
 ```
 
 > 💡 **流式模式的 Token 用量**：在流式模式下，Token 用量只有在整个流消费完毕后才可用。
+
+#### TokenUsageInterface
+
+```php
+use Symfony\AI\Platform\TokenUsage\TokenUsageInterface;
+
+interface TokenUsageInterface
+{
+    public function getPromptTokens(): ?int;         // 输入 Token 数
+    public function getCompletionTokens(): ?int;     // 输出 Token 数
+    public function getThinkingTokens(): ?int;       // 思考 Token 数（如 Claude 深度思考）
+    public function getToolTokens(): ?int;           // 工具调用 Token 数
+    public function getCachedTokens(): ?int;         // 缓存命中 Token 数
+    public function getCacheCreationTokens(): ?int;  // 缓存写入 Token 数（Anthropic）
+    public function getCacheReadTokens(): ?int;      // 缓存读取 Token 数（Anthropic）
+    public function getRemainingTokens(): ?int;      // 剩余 Token 配额
+    public function getRemainingTokensMinute(): ?int; // 每分钟剩余配额
+    public function getRemainingTokensMonth(): ?int;  // 每月剩余配额
+    public function getTotalTokens(): ?int;          // 总 Token 数
+}
+```
+
+#### TokenUsageAggregation —— 多次调用汇总
+
+在 Agent 的多轮工具调用中，每一轮都会产生 Token 用量。`TokenUsageAggregation` 自动汇总所有调用的 Token 消耗：
+
+```php
+// Agent 多轮调用后
+$result = $agent->call($messages);
+$aggregation = $result->getMetadata()->get('token_usage');
+
+// aggregation 汇总了所有轮次的 Token
+echo "总输入: {$aggregation->getPromptTokens()} tokens\n";    // 所有轮次之和
+echo "总输出: {$aggregation->getCompletionTokens()} tokens\n";
+echo "剩余配额: {$aggregation->getRemainingTokens()}\n";       // 取最小值
+```
+
+> 💡 **提示**：汇总逻辑中，`getPromptTokens()` 等数量指标取**所有轮次之和**，而 `getRemainingTokens()` 等配额指标取**最小值**（最保守估计）。
+
+#### 成本估算示例
+
+```php
+// 简单的成本计算
+$usage = $result->getMetadata()->get('token_usage');
+$inputCost = ($usage->getPromptTokens() / 1_000_000) * 2.50;  // GPT-4o: $2.50/1M input
+$outputCost = ($usage->getCompletionTokens() / 1_000_000) * 10.00; // GPT-4o: $10/1M output
+echo sprintf("本次调用成本: $%.4f\n", $inputCost + $outputCost);
+```
+
+### 5.8 DeferredResult —— 延迟求值结果
+
+`Platform::invoke()` 返回的是 `DeferredResult`（延迟求值结果），它不会立即执行结果转换，而是在你调用具体方法时才触发。这种设计允许统一的返回类型和灵活的结果处理。
+
+#### 便捷方法速查表
+
+| 方法 | 返回类型 | 用途 | 内部结果类型 |
+|------|---------|------|-------------|
+| `asText()` | `string` | 获取文本内容 | `TextResult` |
+| `asObject()` | `object` | 获取结构化输出对象 | `ObjectResult` |
+| `asBinary()` | `string` | 获取二进制数据（如图片） | `BinaryResult` |
+| `asFile(string $path)` | `void` | 将二进制结果保存为文件 | `BinaryResult` |
+| `asDataUri(?string $mimeType)` | `string` | 获取 Base64 Data URI | `BinaryResult` |
+| `asVectors()` | `Vector[]` | 获取嵌入向量 | `VectorResult` |
+| `asReranking()` | `array` | 获取重排序结果 | `RerankingResult` |
+| `asStream()` | `\Generator` | 获取流式内容生成器 | `StreamResult` |
+| `asToolCalls()` | `ToolCall[]` | 获取工具调用请求 | `ToolCallResult` |
+| `getResult()` | `ResultInterface` | 获取原始结果对象 | 任意 |
+| `getRawResult()` | `RawResultInterface` | 获取平台原始响应 | — |
+
+#### 使用示例
+
+```php
+use Symfony\AI\Platform\Exception\UnexpectedResultTypeException;
+
+// 文本对话
+$text = $platform->invoke('gpt-4o', 'Hello')->asText();
+
+// 结构化输出
+$review = $platform->invoke('gpt-4o', $prompt, [
+    'response_format' => CodeReview::class,
+])->asObject();
+
+// 图片生成
+$platform->invoke('dall-e-3', 'A sunset over mountains')->asFile('/tmp/sunset.png');
+
+// 嵌入向量
+$vectors = $platform->invoke('text-embedding-3-small', 'Hello world')->asVectors();
+
+// 流式响应
+foreach ($platform->invoke('gpt-4o', 'Tell me a story')->asStream() as $chunk) {
+    echo $chunk;
+}
+```
+
+> ⚠️ **常见错误**：如果调用了与结果类型不匹配的便捷方法（例如对文本结果调用 `asVectors()`），会抛出 `UnexpectedResultTypeException`。请确保便捷方法与请求的模型能力匹配。
+
+---
+
+## 5A. Metadata 元数据系统
+
+Symfony AI 的结果系统中，每个结果都携带 **Metadata（元数据）** —— 一个通用的键值容器，用于存储 Token 用量、来源引用等附加信息。
+
+### 5A.1 Metadata 类
+
+`Metadata` 实现了 `JsonSerializable`、`Countable`、`IteratorAggregate` 和 `ArrayAccess` 接口，支持灵活的数据访问方式：
+
+```php
+use Symfony\AI\Platform\Metadata\Metadata;
+
+$metadata = new Metadata(['model' => 'gpt-4o', 'region' => 'us']);
+
+// 基本操作
+$metadata->has('model');              // true
+$metadata->get('model');              // 'gpt-4o'
+$metadata->get('missing', 'default'); // 'default'
+$metadata->add('version', '0.7');
+$metadata->remove('region');
+
+// 数组式访问
+$model = $metadata['model'];
+
+// 遍历
+foreach ($metadata as $key => $value) {
+    echo "$key: $value\n";
+}
+
+// JSON 序列化
+$json = json_encode($metadata); // {"model":"gpt-4o","version":"0.7"}
+```
+
+### 5A.2 MetadataAwareInterface
+
+所有结果类型（`TextResult`、`StreamResult`、`BinaryResult` 等）以及 `DeferredResult` 都实现了 `MetadataAwareInterface`：
+
+```php
+use Symfony\AI\Platform\Metadata\MetadataAwareInterface;
+
+interface MetadataAwareInterface
+{
+    public function getMetadata(): Metadata;
+}
+```
+
+在实际代码中，通过 `MetadataAwareTrait` 提供默认实现：
+
+```php
+$result = $platform->invoke('gpt-4o', 'Hello');
+$metadata = $result->getMetadata();
+
+// 获取 Token 用量
+$tokenUsage = $metadata->get('token_usage');
+```
+
+### 5A.3 MergeableMetadataInterface —— 自动合并机制
+
+当向 `Metadata` 中使用 `add()` 方法添加一个已存在的键时，如果旧值实现了 `MergeableMetadataInterface`，系统会自动调用 `merge()` 方法合并新旧值：
+
+```php
+use Symfony\AI\Platform\Metadata\MergeableMetadataInterface;
+
+interface MergeableMetadataInterface
+{
+    public function merge(self $metadata): self;
+}
+```
+
+内置的可合并元数据类型包括：
+
+| 类型 | 合并行为 |
+|------|---------|
+| `TokenUsage` | 合并为 `TokenUsageAggregation`，自动汇总 Token 数量 |
+| `SourceCollection` | 合并来源集合，保留所有引用来源 |
+
+> ⚠️ **常见错误**：不要直接使用 `$metadata->set()` 覆盖整个元数据，这会丢失已有的可合并值。使用 `$metadata->add()` 或 `$metadata->merge()` 来安全地添加信息。
 
 ---
 
@@ -1160,6 +1409,13 @@ class ChatController extends AbstractController
 }
 ```
 
+> ⚠️ **常见错误：Symfony Controller 中流式响应没有输出**
+>
+> 在 Symfony Controller 中使用 SSE 流式响应时，如果看不到逐字输出，检查：
+> 1. 是否使用了 `StreamedResponse`（不是普通 `Response`）
+> 2. 是否在每次 `echo` 后调用了 `ob_flush()` 和 `flush()`
+> 3. 反向代理（如 Nginx）是否启用了 `proxy_buffering off`
+
 ### 7.3 流式与工具调用结合
 
 流式模式下也可能收到工具调用：
@@ -1225,6 +1481,99 @@ if (null !== $tokenUsage) {
     echo "总消耗: {$tokenUsage->getTotalTokens()} tokens\n";
 }
 ```
+
+### 7.5 流式监听器（Stream Listener）
+
+Symfony AI 提供了完整的流式事件监听系统，允许你在流式传输过程中拦截、修改或记录数据。
+
+#### ListenerInterface
+
+```php
+use Symfony\AI\Platform\Result\Stream\ListenerInterface;
+use Symfony\AI\Platform\Result\Stream\StartEvent;
+use Symfony\AI\Platform\Result\Stream\ChunkEvent;
+use Symfony\AI\Platform\Result\Stream\CompleteEvent;
+
+interface ListenerInterface
+{
+    public function onStart(StartEvent $event): void;
+    public function onChunk(ChunkEvent $event): void;
+    public function onComplete(CompleteEvent $event): void;
+}
+```
+
+#### AbstractStreamListener 基类
+
+大多数监听器只需关注部分事件，继承 `AbstractStreamListener` 即可选择性覆写：
+
+```php
+use Symfony\AI\Platform\Result\Stream\AbstractStreamListener;
+
+class LoggingStreamListener extends AbstractStreamListener
+{
+    private int $chunkCount = 0;
+
+    public function onStart(StartEvent $event): void
+    {
+        echo "流式传输开始\n";
+    }
+
+    public function onChunk(ChunkEvent $event): void
+    {
+        $this->chunkCount++;
+    }
+
+    public function onComplete(CompleteEvent $event): void
+    {
+        echo "传输完成，共 {$this->chunkCount} 个分块\n";
+    }
+}
+```
+
+#### ChunkEvent —— 修改或跳过分块
+
+`ChunkEvent` 支持在传输过程中修改或跳过特定分块：
+
+```php
+class FilterStreamListener extends AbstractStreamListener
+{
+    public function onChunk(ChunkEvent $event): void
+    {
+        $chunk = $event->getChunk();
+
+        // 过滤敏感词
+        if (str_contains($chunk, '敏感词')) {
+            $event->setChunk(str_replace('敏感词', '***', $chunk));
+        }
+
+        // 跳过空分块
+        if ('' === trim($chunk)) {
+            $event->skipChunk();
+        }
+    }
+}
+```
+
+#### 注册监听器
+
+```php
+$result = $platform->invoke('gpt-4o', 'Tell me a story');
+$stream = $result->getResult(); // StreamResult
+
+$stream->addListener(new LoggingStreamListener());
+$stream->addListener(new FilterStreamListener());
+
+foreach ($stream->getContent() as $chunk) {
+    echo $chunk;
+}
+```
+
+#### 内置监听器
+
+| 监听器 | 所属组件 | 用途 |
+|--------|---------|------|
+| Agent `StreamListener` | Agent | 处理流式工具调用解析 |
+| Perplexity `StreamListener` | Platform Bridge | 从流中提取搜索结果和引用到 Metadata |
 
 ---
 
@@ -1379,7 +1728,7 @@ class RateLimitSubscriber implements EventSubscriberInterface
 
 ## 9. 平台桥接器一览
 
-Platform 组件提供 33+ 个 AI 平台的桥接器实现。
+Platform 组件提供 33 个 AI 平台的桥接器实现。
 
 ### 9.1 主流商业平台
 
@@ -1588,6 +1937,44 @@ $result = $platform->invoke('gpt-4o', $messages, [
 
 这在需要动态调整系统提示的场景（多语言、多角色等）非常实用。
 
+### 10.4 ScopingHttpClient —— 统一 HTTP 配置
+
+0.7 版本中，多个桥接器（如 Ollama、ElevenLabs、Azure Store）支持 `apiKey` 和 `endpoint` 参数为 `null`，配合 Symfony 的 `ScopingHttpClient` 在 HTTP 客户端层统一配置认证信息。
+
+#### 使用场景
+
+当你的 Symfony 应用已经在 `framework.http_client` 中配置了 API 凭证，可以不在 Platform 工厂方法中重复传递：
+
+```yaml
+# config/packages/framework.yaml
+framework:
+    http_client:
+        scoped_clients:
+            ollama.client:
+                base_uri: 'http://localhost:11434'
+            openai.client:
+                base_uri: 'https://api.openai.com/v1/'
+                headers:
+                    Authorization: 'Bearer %env(OPENAI_API_KEY)%'
+```
+
+```php
+use Symfony\AI\Platform\Bridge\Ollama\PlatformFactory;
+
+// endpoint 和 apiKey 都为 null，使用已配置的 ScopingHttpClient
+$platform = PlatformFactory::create(
+    endpoint: null,
+    apiKey: null,
+    httpClient: $scopedHttpClient, // 已配置好 base_uri 和认证的客户端
+);
+```
+
+#### 优势
+
+- **集中管理**：所有 HTTP 配置在 Symfony 框架层统一管理
+- **凭证隔离**：API 密钥不会出现在业务代码中
+- **灵活切换**：通过环境变量轻松切换开发/生产环境的端点
+
 ---
 
 ## 11. 常用调用选项速查
@@ -1623,17 +2010,34 @@ $platform->invoke('gpt-4o', $messages, ['temperature' => 1.0]);
 
 ---
 
+## 决策指南
+
+### Platform::invoke() vs Agent::call() —— 何时选择哪个？
+
+| 维度 | `Platform::invoke()` | `Agent::call()` |
+|------|---------------------|-----------------|
+| **抽象层级** | 低层，直接调用 AI 模型 | 高层，包含工具调用循环 |
+| **工具支持** | 需手动处理 `ToolCallResult` | 自动执行工具并循环调用 |
+| **返回类型** | `DeferredResult` | `ResultInterface` |
+| **系统提示** | 手动放入 `MessageBag` | 通过 `InputProcessor` 自动注入 |
+| **适用场景** | 简单文本生成、嵌入向量、图片生成 | 需要工具调用、多轮推理的复杂任务 |
+| **推荐使用** | 单次 AI 调用，无需工具 | 构建智能代理 |
+
+> 💡 **经验法则**：如果你的应用只需要"问一个问题，得到一个回答"，用 `Platform::invoke()`。如果 AI 需要调用外部工具或进行多步推理，用 `Agent::call()`。
+
+---
+
 ## 12. 下一步
 
 在本章中，我们系统地学习了 Platform 组件的每一个子系统：
 
-- **核心架构**：`PlatformInterface`、Bridge 模式、完整请求流程
+- **核心架构**：`PlatformInterface`、Bridge 模式、完整请求流程、Contract 层
 - **消息系统**：Role、四种消息类型、Message 工厂、MessageBag、九种内容类型
-- **模型能力**：Model 类、Capability 枚举、能力检查
-- **结果体系**：八种结果类型、Token 用量追踪
+- **模型能力**：Model 类、ModelCatalog、Capability 枚举、能力检查
+- **结果体系**：八种结果类型、DeferredResult、Token 用量追踪、Metadata 元数据
 - **结构化输出**：`#[With]` 属性、嵌套 DTO、枚举、JSON Schema 生成
-- **流式响应**：Generator 迭代、SSE 集成、与工具调用结合
+- **流式响应**：Generator 迭代、SSE 集成、与工具调用结合、Stream Listener
 - **事件系统**：`InvocationEvent`、`ResultEvent`、日志/监控/限流
-- **桥接器全景**：33+ 桥接器、PlatformFactory 模式、Cache/Failover
+- **桥接器全景**：33 个桥接器、PlatformFactory 模式、Cache/Failover/ScopingHttpClient
 
 Platform 是 Symfony AI 的地基。在 [第 3 章：Agent 组件](03-agent.md) 中，我们将学习如何在 Platform 之上构建智能 Agent——它能自主规划、调用工具、维护对话状态，把 AI 从"问答机器"变成"能干活的助手"。

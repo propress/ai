@@ -601,4 +601,4 @@ vendor/bin/mate tools:call php-version
 | 第 7 章 | MCP Bundle | AI 客户端接入 |
 | 第 8 章 | Mate | 开发环境 AI 辅助 |
 
-从 [第 9 章](09-scenarios-basic.md) 开始，我们将进入**实战篇**——通过一系列真实业务场景，将这些组件融会贯通，构建完整的 AI 应用。
+从 [第 9 章](09-scenario-chatbot.md) 开始，我们将进入**实战篇**——通过一系列真实业务场景，将这些组件融会贯通，构建完整的 AI 应用。

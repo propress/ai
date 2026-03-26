@@ -2,7 +2,7 @@
 
 ## 🎯 本章学习目标
 
-掌握 Store 组件的完整架构：文档加载与转换、向量化与索引流水线、25+ 存储后端、向量/全文/混合查询、检索器与重排序、事件系统，学会构建端到端的 RAG（检索增强生成）应用。
+掌握 Store 组件的完整架构：文档加载与转换、向量化与索引流水线、24 个存储后端、向量/全文/混合查询、检索器与重排序、事件系统，学会构建端到端的 RAG（检索增强生成）应用。
 
 ---
 
@@ -729,7 +729,7 @@ php bin/console ai:store:setup
 php bin/console ai:store:drop
 ```
 
-### 8.3 25+ 存储后端一览
+### 8.3 24 个存储后端一览
 
 Store 组件提供了覆盖主流向量数据库和搜索引擎的桥接器：
 
@@ -1541,7 +1541,7 @@ php bin/console ai:store:drop
 - ✅ **文档系统**：TextDocument、VectorDocument、Metadata 的生命周期
 - ✅ **加载与转换**：8 种 Loader + 6 种 Transformer 构建文档处理管线
 - ✅ **向量化与索引**：Vectorizer + DocumentProcessor + SourceIndexer 的完整工作流
-- ✅ **25+ 存储后端**：从 InMemory 到 PostgreSQL 到云服务的选型与配置
+- ✅ **24 个存储后端**：从 InMemory 到 PostgreSQL 到云服务的选型与配置
 - ✅ **三种查询类型**：VectorQuery、TextQuery、HybridQuery 的使用场景
 - ✅ **检索与重排序**：Retriever + Reranker 两阶段检索策略
 - ✅ **事件系统**：PreQueryEvent / PostQueryEvent 实现查询扩展与结果增强
