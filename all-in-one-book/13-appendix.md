@@ -316,13 +316,13 @@ mate clear-cache
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
     agent:
         my_agent:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             system: '你是一个友好的助手。'
 ```

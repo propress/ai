@@ -215,7 +215,7 @@ $platform = new CachePlatform($failover, cache: $cache);
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
@@ -223,7 +223,7 @@ ai:
         failover:
             type: failover
             platforms:
-                - ai.platform.open_ai
+                - ai.platform.openai
                 - ai.platform.anthropic
         # 缓存平台（包装容灾平台）
         cached:
@@ -850,13 +850,13 @@ for ($i = 0; $i < $maxIterations; $i++) {
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
             type: failover
-            platforms: [ai.platform.open_ai, ai.platform.anthropic]
+            platforms: [ai.platform.openai, ai.platform.anthropic]
         cached:
             type: cache
             platform: ai.platform.failover

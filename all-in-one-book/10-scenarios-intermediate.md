@@ -680,11 +680,11 @@ $response = $multiAgent->call(new MessageBag(
 ai:
     agent:
         tech_support:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             system: '你是技术支持专家...'
         billing_support:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             system: '你是账单客服专家...'
         # Orchestrator 需要在服务配置中手动组装

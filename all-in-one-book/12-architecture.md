@@ -106,13 +106,13 @@ class ProductService
 # 通过 AI Bundle YAML 配置装饰器链
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
         failover:
             type: failover
-            platforms: [ai.platform.open_ai, ai.platform.anthropic]
+            platforms: [ai.platform.openai, ai.platform.anthropic]
         production:
             type: cache
             platform: ai.platform.failover
@@ -346,7 +346,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 # config/packages/ai.yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'  # 通过环境变量注入
 ```
 

@@ -43,11 +43,11 @@ $response = $agent->call(new MessageBag(Message::ofUser('天气如何？')));
 # config/packages/ai.yaml — 一次配置
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
     agent:
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
 ```
 
@@ -146,7 +146,7 @@ GEMINI_API_KEY=AIza...
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 ```
 
@@ -164,7 +164,7 @@ ai:
 ai:
     platform:
         # OpenAI 平台
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
         # Anthropic Claude 平台
@@ -177,14 +177,14 @@ ai:
 
         # Ollama（本地部署，无需 API 密钥）
         ollama:
-            url: 'http://localhost:11434'
+            endpoint: 'http://localhost:11434'
 ```
 
 **注册结果**：每个平台配置会注册为 `ai.platform.<配置键>` 服务：
 
 | 配置键 | 服务 ID | 实现类 |
 |--------|---------|--------|
-| `open_ai` | `ai.platform.open_ai` | `OpenAi\Platform` |
+| `openai` | `ai.platform.openai` | `OpenAi\Platform` |
 | `anthropic` | `ai.platform.anthropic` | `Anthropic\Platform` |
 | `gemini` | `ai.platform.gemini` | `Gemini\Platform` |
 | `ollama` | `ai.platform.ollama` | `Ollama\Platform` |
@@ -197,22 +197,22 @@ AI Bundle 支持 20+ 种 AI 平台：
 
 | 平台 | 配置键 | 必需参数 |
 |------|--------|---------|
-| OpenAI | `open_ai` | `api_key` |
+| OpenAI | `openai` | `api_key` |
 | Anthropic | `anthropic` | `api_key` |
-| Azure OpenAI | `azure_open_ai` | `base_url`, `api_key`, `api_version` |
+| Azure OpenAI | `azure` | `base_url`, `api_key`, `deployment` |
 | Google Gemini | `gemini` | `api_key` |
-| Google Vertex AI | `vertex_ai` | `project`, `location` |
-| AWS Bedrock | `bedrock` | `region` |
-| Ollama | `ollama` | `url` |
+| Google Vertex AI | `vertexai` | `project_id`, `location` |
+| AWS Bedrock | `bedrock` | - |
+| Ollama | `ollama` | `endpoint` |
 | Mistral | `mistral` | `api_key` |
-| DeepSeek | `deep_seek` | `api_key` |
-| HuggingFace | `hugging_face` | `api_key` |
-| LM Studio | `lm_studio` | `url` |
+| DeepSeek | `deepseek` | `api_key` |
+| HuggingFace | `huggingface` | `api_key` |
+| LM Studio | `lmstudio` | `host_url` |
 | Perplexity | `perplexity` | `api_key` |
 | Cerebras | `cerebras` | `api_key` |
-| OpenRouter | `open_router` | `api_key` |
-| Docker Model Runner | `docker_model_runner` | `url` |
-| ElevenLabs | `eleven_labs` | `api_key` |
+| OpenRouter | `openrouter` | `api_key` |
+| Docker Model Runner | `dockermodelrunner` | `host_url` |
+| ElevenLabs | `elevenlabs` | `api_key` |
 
 ### 4.3 Azure OpenAI 配置
 
@@ -221,10 +221,12 @@ Azure OpenAI 需要额外的端点和版本信息：
 ```yaml
 ai:
     platform:
-        azure_open_ai:
-            base_url: '%env(AZURE_OPENAI_BASE_URL)%'
-            api_key: '%env(AZURE_OPENAI_API_KEY)%'
-            api_version: '2024-02-01'
+        azure:
+            my_instance:
+                base_url: '%env(AZURE_OPENAI_BASE_URL)%'
+                api_key: '%env(AZURE_OPENAI_API_KEY)%'
+                deployment: 'gpt-4o'
+                api_version: '2024-02-01'
 ```
 
 ### 4.4 Google Vertex AI 配置
@@ -234,8 +236,8 @@ Vertex AI 基于 Google Cloud 项目：
 ```yaml
 ai:
     platform:
-        vertex_ai:
-            project: '%env(GOOGLE_PROJECT_ID)%'
+        vertexai:
+            project_id: '%env(GOOGLE_PROJECT_ID)%'
             location: 'us-central1'
 ```
 
@@ -246,7 +248,7 @@ ai:
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
@@ -256,7 +258,7 @@ ai:
         # 故障转移平台：依次尝试，全部失败才抛出异常
         failover:
             platforms:
-                - open_ai       # 第一优先级
+                - openai       # 第一优先级
                 - anthropic     # 第二优先级
                 - gemini        # 第三优先级
 ```
@@ -265,8 +267,8 @@ ai:
 
 ```text
 调用 ai.platform.failover
-  ├── 尝试 open_ai → 成功 → 返回结果
-  ├── open_ai 失败 → 尝试 anthropic → 成功 → 返回结果
+  ├── 尝试 openai → 成功 → 返回结果
+  ├── openai 失败 → 尝试 anthropic → 成功 → 返回结果
   ├── anthropic 失败 → 尝试 gemini → 成功 → 返回结果
   └── 全部失败 → 抛出异常
 ```
@@ -280,12 +282,12 @@ ai:
 ```yaml
 ai:
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
-        # 缓存平台：对 open_ai 的请求进行缓存
+        # 缓存平台：对 openai 的请求进行缓存
         cache:
-            platform: open_ai
+            platform: openai
             cache_pool: cache.app
 ```
 
@@ -303,7 +305,7 @@ class MyService
 {
     public function __construct(
         // 注入特定平台
-        #[Target('open_ai')] private PlatformInterface $openai,
+        #[Target('openai')] private PlatformInterface $openai,
         #[Target('anthropic')] private PlatformInterface $anthropic,
     ) {}
 
@@ -330,7 +332,7 @@ ai:
     agent:
         # 最简配置：只需指定平台和模型
         my_agent:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
 
         # 完整配置：包含系统提示和工具
@@ -394,7 +396,7 @@ class WeatherTool
 ai:
     agent:
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             tools:
                 - App\Tool\WeatherTool
@@ -453,11 +455,11 @@ services:
 ai:
     multi_agent:
         orchestrator:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             agents:
                 researcher:
-                    platform: ai.platform.open_ai
+                    platform: ai.platform.openai
                     model: gpt-4o-mini
                 writer:
                     platform: ai.platform.anthropic
@@ -503,33 +505,32 @@ AI Bundle 支持 25+ 种向量存储后端：
 ai:
     store:
         # Qdrant 向量存储
-        qdrant_store:
-            qdrant:
-                host: '%env(QDRANT_HOST)%'
-                port: 6333
-                collection: my_documents
+        qdrant:
+            my_store:
+                endpoint: '%env(QDRANT_ENDPOINT)%'
                 api_key: '%env(QDRANT_API_KEY)%'
+                collection_name: my_documents
 
         # Pinecone 向量存储
-        pinecone_store:
-            pinecone:
+        pinecone:
+            my_store:
                 api_key: '%env(PINECONE_API_KEY)%'
                 host: '%env(PINECONE_HOST)%'
                 namespace: production
 
         # PostgreSQL pgvector
-        postgres_store:
-            postgres:
-                dbal_connection: doctrine.dbal.default_connection
-                table: embeddings
+        postgres:
+            my_store:
+                connection: doctrine.dbal.default_connection
+                table_name: embeddings
                 distance: cosine
 
         # InMemory 存储（适合测试）
-        test_store:
-            in_memory: ~
+        memory:
+            test_store: ~
 ```
 
-**注册结果**：每个 Store 配置注册为 `ai.store.<配置名>` 服务。
+**注册结果**：每个 Store 配置注册为 `ai.store.<类型>.<实例名>` 服务。
 
 ### 6.2 支持的向量存储一览
 
@@ -537,14 +538,14 @@ ai:
 |------|--------|---------|
 | Pinecone | `pinecone` | 托管服务，开箱即用 |
 | Qdrant | `qdrant` | 高性能开源向量数据库 |
-| ChromaDB | `chroma_db` | 轻量级嵌入数据库 |
+| ChromaDB | `chromadb` | 轻量级嵌入数据库 |
 | Elasticsearch | `elasticsearch` | 全文 + 向量混合搜索 |
 | PostgreSQL | `postgres` | 已有 PG 数据库的项目 |
-| MongoDB | `mongo_db` | 文档数据库 + 向量搜索 |
+| MongoDB | `mongodb` | 文档数据库 + 向量搜索 |
 | Redis | `redis` | 高速缓存级向量搜索 |
 | Milvus | `milvus` | 大规模向量搜索 |
 | Weaviate | `weaviate` | 语义搜索引擎 |
-| InMemory | `in_memory` | 测试和原型开发 |
+| InMemory | `memory` | 测试和原型开发 |
 
 ### 6.3 Indexer（索引器）配置
 
@@ -554,9 +555,9 @@ ai:
 ai:
     indexer:
         document_indexer:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: text-embedding-3-small
-            store: ai.store.qdrant_store
+            store: ai.store.qdrant.my_store
 ```
 
 ### 6.4 消息存储配置（Chat Message Store）
@@ -567,40 +568,40 @@ ai:
 ai:
     message_store:
         # Redis 消息存储
-        redis_store:
-            redis:
-                redis_client: snc_redis.default
-                ttl: 3600
+        redis:
+            my_store:
+                client: snc_redis.default
+                index_name: ai_messages
 
         # Doctrine DBAL 消息存储
-        db_store:
-            doctrine_dbal:
-                connection: doctrine.dbal.default_connection
-                table: ai_messages
+        doctrine:
+            dbal:
+                my_store:
+                    connection: doctrine.dbal.default_connection
+                    table_name: ai_messages
 
         # Session 消息存储（开发/测试用）
-        session_store:
-            session: ~
+        session:
+            my_session_store: ~
 
         # 内存消息存储（测试用）
-        memory_store:
-            in_memory: ~
+        memory:
+            test_store: ~
 ```
 
 ### 6.5 Chat 配置
 
-将平台和消息存储组合为完整的 Chat 服务：
+将 Agent 和消息存储组合为完整的 Chat 服务：
 
 ```yaml
 ai:
     chat:
         my_chat:
-            platform: ai.platform.open_ai
-            model: gpt-4o
-            message_store: ai.message_store.redis_store
+            agent: ai.agent.assistant
+            message_store: ai.message_store.redis.my_store
 ```
 
-> 消息存储服务标记为 `ai.message_store` 标签，Chat 通过服务 ID 引用。
+> Chat 需要一个 Agent（包含平台和模型配置）和一个消息存储。通过服务 ID 引用已配置的 Agent 和 Message Store。
 
 ---
 
@@ -632,7 +633,7 @@ php bin/console ai:platform:invoke "Hello, World!"
 
 # 指定平台和模型
 php bin/console ai:platform:invoke \
-    --platform=ai.platform.open_ai \
+    --platform=ai.platform.openai \
     --model=gpt-4o \
     "Explain dependency injection"
 
@@ -1009,24 +1010,24 @@ ai:
     # 平台配置
     # ========================================
     platform:
-        open_ai:
+        openai:
             api_key: '%env(OPENAI_API_KEY)%'
 
         anthropic:
             api_key: '%env(ANTHROPIC_API_KEY)%'
 
         ollama:
-            url: 'http://localhost:11434'
+            endpoint: 'http://localhost:11434'
 
         # 缓存平台（对 OpenAI 请求缓存）
         cache:
-            platform: open_ai
+            platform: openai
             cache_pool: cache.app
 
         # 故障转移平台
         failover:
             platforms:
-                - open_ai
+                - openai
                 - anthropic
 
     # ========================================
@@ -1035,7 +1036,7 @@ ai:
     agent:
         # 通用对话助手
         assistant:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             system_prompt: |
                 You are a helpful assistant.
@@ -1066,7 +1067,7 @@ ai:
     # ========================================
     indexer:
         document_indexer:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: text-embedding-3-small
             store: ai.store.main_store
 
@@ -1089,7 +1090,7 @@ ai:
     # ========================================
     chat:
         main:
-            platform: ai.platform.open_ai
+            platform: ai.platform.openai
             model: gpt-4o
             message_store: ai.message_store.default
 ```
