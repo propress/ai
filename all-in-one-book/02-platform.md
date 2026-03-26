@@ -120,6 +120,14 @@ Bridge/OpenAi/
 
 > 📌 每个 Bridge 只需实现 `supports()` + `request()` / `convert()`，Platform 会自动根据模型名称路由到正确的 Bridge。
 
+> ⚠️ **常见错误：忘记安装 Bridge 包**
+>
+> 使用特定 AI 平台前，必须安装对应的桥接器包。例如使用 OpenAI 时需要：
+> ```bash
+> composer require symfony/ai-openai
+> ```
+> 如果看到 `No model client found` 错误，通常是因为缺少对应的 Bridge 包。
+
 ### 2.3 请求完整流程
 
 当你调用 `$platform->invoke('gpt-4o', $messageBag, $options)` 时，内部经历以下步骤：
@@ -1401,6 +1409,13 @@ class ChatController extends AbstractController
 }
 ```
 
+> ⚠️ **常见错误：Symfony Controller 中流式响应没有输出**
+>
+> 在 Symfony Controller 中使用 SSE 流式响应时，如果看不到逐字输出，检查：
+> 1. 是否使用了 `StreamedResponse`（不是普通 `Response`）
+> 2. 是否在每次 `echo` 后调用了 `ob_flush()` 和 `flush()`
+> 3. 反向代理（如 Nginx）是否启用了 `proxy_buffering off`
+
 ### 7.3 流式与工具调用结合
 
 流式模式下也可能收到工具调用：
@@ -1992,6 +2007,23 @@ $platform->invoke('gpt-4o', $messages, ['temperature' => 0.7]);
 // temperature = 1.0+：高创造性（创意写作）
 $platform->invoke('gpt-4o', $messages, ['temperature' => 1.0]);
 ```
+
+---
+
+## 决策指南
+
+### Platform::invoke() vs Agent::call() —— 何时选择哪个？
+
+| 维度 | `Platform::invoke()` | `Agent::call()` |
+|------|---------------------|-----------------|
+| **抽象层级** | 低层，直接调用 AI 模型 | 高层，包含工具调用循环 |
+| **工具支持** | 需手动处理 `ToolCallResult` | 自动执行工具并循环调用 |
+| **返回类型** | `DeferredResult` | `ResultInterface` |
+| **系统提示** | 手动放入 `MessageBag` | 通过 `InputProcessor` 自动注入 |
+| **适用场景** | 简单文本生成、嵌入向量、图片生成 | 需要工具调用、多轮推理的复杂任务 |
+| **推荐使用** | 单次 AI 调用，无需工具 | 构建智能代理 |
+
+> 💡 **经验法则**：如果你的应用只需要"问一个问题，得到一个回答"，用 `Platform::invoke()`。如果 AI 需要调用外部工具或进行多步推理，用 `Agent::call()`。
 
 ---
 

@@ -392,6 +392,12 @@ class ProductTool
 }
 ```
 
+> ⚠️ **常见错误：工具返回类型不匹配**
+>
+> AI 期望工具返回字符串结果。如果工具方法返回复杂对象而未实现 `ToolResultConverterInterface`，会导致静默失败或类型错误。确保：
+> 1. 简单工具直接返回 `string`
+> 2. 复杂返回值实现 `ToolResultConverterInterface` 进行序列化
+
 ### 4.5 使用 #[With] 属性添加参数约束
 
 通过 Platform 组件的 `#[With]` 属性，可以为工具参数添加 JSON Schema 约束：

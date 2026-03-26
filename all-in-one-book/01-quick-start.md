@@ -69,6 +69,13 @@ $apiKey = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY');
 
 > ⚠️ **安全提示**：永远不要将 API 密钥硬编码在源代码中。请将 `.env` 添加到 `.gitignore`。在生产环境中，使用服务器环境变量或 Secrets 管理工具。
 
+> ⚠️ **常见错误：API Key 未设置**
+>
+> 如果你看到类似 `Authentication error` 或 `401 Unauthorized` 的错误，请检查：
+> 1. `.env` 文件是否存在且包含正确的 API Key
+> 2. 环境变量是否已加载（使用 `$_ENV['OPENAI_API_KEY']` 或 Symfony DotEnv）
+> 3. API Key 是否有足够的额度和权限
+
 ### 2.4 验证安装
 
 创建 `verify.php` 文件，确认安装成功：
